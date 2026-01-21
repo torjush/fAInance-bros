@@ -1,0 +1,15 @@
+# Core dependencies
+anthropic>=0.39.0
+langgraph>=0.2.0
+yfinance>=0.2.40
+aiohttp>=3.9.0
+
+# Data processing
+pandas>=2.0.0
+
+# Utilities (standard library used where possible)
+# xml.etree.ElementTree - built-in
+# sqlite3 - built-in
+# asyncio - built-in
+# json - built-in
+# logging - built-in
