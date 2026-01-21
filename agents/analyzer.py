@@ -9,6 +9,7 @@ import anthropic
 
 from config import Config, PROMPTS
 from data.storage import Storage
+from utils import strip_code_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +89,13 @@ class AnalyzerAgent:
             )
 
             content = response.content[0].text.strip()
+            content = strip_code_blocks(content)
             analysis = json.loads(content)
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse analysis JSON: {e}")
-            # Try to extract JSON from the response
-            analysis = self._try_extract_json(content)
-            if not analysis:
-                analysis = self._create_fallback_analysis(price_stats)
+            logger.error(f"Response content (first 500 chars): {content[:500]}")
+            analysis = self._create_fallback_analysis(price_stats)
 
         except Exception as e:
             logger.error(f"Error during analysis: {e}")
@@ -309,20 +309,6 @@ class AnalyzerAgent:
             content=analysis,
             summary=analysis.get("outlook", "Analysis completed"),
         )
-
-    def _try_extract_json(self, text: str) -> dict | None:
-        """Try to extract JSON from text that might have extra content."""
-        import re
-
-        # Try to find JSON object in the text
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if json_match:
-            try:
-                return json.loads(json_match.group())
-            except json.JSONDecodeError:
-                pass
-
-        return None
 
     def _create_fallback_analysis(self, price_stats: dict) -> dict:
         """Create a basic fallback analysis if LLM fails."""

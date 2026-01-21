@@ -11,6 +11,7 @@ import anthropic
 from config import Config, PROMPTS
 from data.sources import fetch_all_data, YFinanceSource
 from data.storage import Storage
+from utils import strip_code_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -219,12 +220,14 @@ Published: {news_item.get('published', 'Unknown')}
                 messages=[{"role": "user", "content": prompt}],
             )
 
-            # Parse JSON response
+            # Parse JSON response (strip code blocks if present)
             content = response.content[0].text.strip()
+            content = strip_code_blocks(content)
             return json.loads(content)
 
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse news extraction JSON: {e}")
+            logger.warning(f"Response (first 300 chars): {content[:300]}")
             return None
         except Exception as e:
             logger.error(f"Error extracting news data: {e}")
@@ -256,10 +259,12 @@ Description: {filing.get('description', 'No description available')}
             )
 
             content = response.content[0].text.strip()
+            content = strip_code_blocks(content)
             return json.loads(content)
 
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse filing extraction JSON: {e}")
+            logger.warning(f"Response (first 300 chars): {content[:300]}")
             return None
         except Exception as e:
             logger.error(f"Error extracting filing data: {e}")
