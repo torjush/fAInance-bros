@@ -6,6 +6,7 @@ aiohttp>=3.9.0
 
 # Data processing
 pandas>=2.0.0
+matplotlib>=3.8.0
 
 # Utilities (standard library used where possible)
 # xml.etree.ElementTree - built-in

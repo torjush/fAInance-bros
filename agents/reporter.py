@@ -30,6 +30,7 @@ class ReporterAgent:
         self,
         ticker: str,
         analysis: dict[str, Any],
+        chart_path: str = None,
     ) -> str:
         """
         Generate a markdown report from the analysis.
@@ -37,6 +38,7 @@ class ReporterAgent:
         Args:
             ticker: Stock ticker symbol
             analysis: Analysis results from AnalyzerAgent
+            chart_path: Path to the generated chart image
 
         Returns:
             Markdown formatted report string
@@ -88,6 +90,20 @@ class ReporterAgent:
             logger.error(f"Error generating report: {e}")
             report = self._create_fallback_report(ticker, analysis)
 
+        # Embed chart if available
+        if chart_path:
+            chart_section = self._create_chart_section(chart_path)
+            if chart_section:
+                # Insert chart after first heading
+                lines = report.split('\n')
+                insert_idx = 1
+                for i, line in enumerate(lines):
+                    if line.startswith('#') and i > 0:
+                        insert_idx = i
+                        break
+                lines.insert(insert_idx, chart_section)
+                report = '\n'.join(lines)
+
         # Save report to database
         self.storage.save_report(ticker, report)
 
@@ -99,6 +115,20 @@ class ReporterAgent:
 
         logger.info(f"Report generated for {ticker}")
         return report
+
+    def _create_chart_section(self, chart_path: str) -> str | None:
+        """Create markdown section with chart image link."""
+        path = Path(chart_path)
+        if not path.exists():
+            logger.warning(f"Chart file not found: {chart_path}")
+            return None
+
+        return f"""
+## Price Chart
+
+![Price Chart with Technical Analysis]({path.name})
+
+"""
 
     def _format_price_table(self, prices: list[dict]) -> str:
         """Format prices as a markdown table."""

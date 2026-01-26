@@ -26,6 +26,7 @@ from agents.context import ContextAgent
 from agents.collector import CollectorAgent
 from agents.analyzer import AnalyzerAgent
 from agents.reporter import ReporterAgent
+from visualization import plot_price_chart
 
 
 # Configure logging
@@ -45,6 +46,7 @@ class AnalysisState(TypedDict):
     context: dict[str, Any]
     collected_data: dict[str, Any]
     analysis: dict[str, Any]
+    chart_path: str | None
     report: str
     error: str | None
     status: str
@@ -75,13 +77,15 @@ class StockAnalyzerWorkflow:
         workflow.add_node("gather_context", self._gather_context)
         workflow.add_node("collect_data", self._collect_data)
         workflow.add_node("analyze", self._analyze)
+        workflow.add_node("generate_chart", self._generate_chart)
         workflow.add_node("generate_report", self._generate_report)
 
         # Define edges (linear workflow)
         workflow.set_entry_point("gather_context")
         workflow.add_edge("gather_context", "collect_data")
         workflow.add_edge("collect_data", "analyze")
-        workflow.add_edge("analyze", "generate_report")
+        workflow.add_edge("analyze", "generate_chart")
+        workflow.add_edge("generate_chart", "generate_report")
         workflow.add_edge("generate_report", END)
 
         return workflow.compile()
@@ -157,6 +161,48 @@ class StockAnalyzerWorkflow:
                 "status": "analysis_failed",
             }
 
+    def _generate_chart(self, state: AnalysisState) -> dict:
+        """Node: Generate price chart with technical analysis overlays."""
+        logging.info(f"[Visualization] Generating chart for {state['ticker']}")
+
+        try:
+            # Get prices - prefer from analysis (which has recent_prices), fall back to context
+            analysis = state.get("analysis", {})
+            prices = analysis.get("recent_prices", [])
+
+            # If no prices in analysis, try context (historical data from DB)
+            if not prices:
+                prices = state.get("context", {}).get("price_history", [])
+
+            if not prices:
+                logging.warning("No price data for chart")
+                return {"chart_path": None, "status": "chart_skipped"}
+
+            # Generate chart path
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            ticker_safe = state["ticker"].replace(".", "_")
+            chart_path = f"{self.config.reports_dir}/{ticker_safe}_{timestamp}.png"
+
+            # Generate the chart
+            result_path = plot_price_chart(
+                ticker=state["ticker"],
+                prices=prices,
+                analysis=analysis,
+                output_path=chart_path,
+            )
+
+            return {
+                "chart_path": result_path,
+                "status": "chart_generated",
+            }
+
+        except Exception as e:
+            logging.error(f"Chart generation failed: {e}", exc_info=True)
+            return {
+                "chart_path": None,
+                "status": "chart_failed",
+            }
+
     def _generate_report(self, state: AnalysisState) -> dict:
         """Node: Generate final report."""
         logging.info(f"[Reporter Agent] Generating report for {state['ticker']}")
@@ -172,6 +218,7 @@ class StockAnalyzerWorkflow:
             report = self.reporter_agent.generate_report(
                 ticker=state["ticker"],
                 analysis=state["analysis"],
+                chart_path=state.get("chart_path"),
             )
             return {
                 "report": report,
@@ -192,6 +239,7 @@ class StockAnalyzerWorkflow:
             "context": {},
             "collected_data": {},
             "analysis": {},
+            "chart_path": None,
             "report": "",
             "error": None,
             "status": "starting",
