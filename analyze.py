@@ -11,6 +11,9 @@ Examples:
     python analyze.py EQNR.OL --verbose
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import argparse
 import asyncio
 import logging

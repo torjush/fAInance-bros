@@ -1,6 +1,6 @@
 # Finance Agents
 
-AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (Oslo Børs). Uses LangGraph to orchestrate multiple AI agents that collect data, analyze trends, and generate comprehensive markdown reports.
+AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (Oslo Børs). Uses LangGraph to orchestrate multiple AI agents that collect data, analyze trends, and generate comprehensive reports with charts.
 
 ## Features
 
@@ -15,7 +15,8 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 - **Cost-optimized LLM usage**:
   - Claude Haiku for data extraction (cheap, fast)
   - Claude Sonnet for analysis and report generation (better reasoning)
-- **Containerized** with Docker for easy deployment and scheduling
+- **Visual technical analysis** with price charts, moving averages, and support/resistance levels
+- **PDF reports** alongside markdown
 
 ## Architecture
 
@@ -41,8 +42,14 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
                                  │
                                  ▼
                         ┌─────────────────┐
+                        │  Visualization  │
+                        │ (Price Charts)  │
+                        └────────┬────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
                         │ Report Generator│
-                        │ (Claude Sonnet) │
+                        │  (MD + PDF)     │
                         └─────────────────┘
 ```
 
@@ -50,20 +57,28 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) package manager
 - Anthropic API key
 
 ### Setup
 
-1. Clone or copy this directory
-2. Create a `.env` file with your API key:
+1. Clone this repository
+
+2. Install uv (if not already installed):
    ```bash
-   echo "ANTHROPIC_API_KEY=your-key-here" > .env
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. Build the Docker image:
+3. Create a `.env` file with your API key:
    ```bash
-   docker-compose build
+   cp .env.example .env
+   # Edit .env and add your ANTHROPIC_API_KEY
+   ```
+
+4. Install dependencies:
+   ```bash
+   uv sync
    ```
 
 ### Usage
@@ -71,49 +86,26 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 Analyze a stock:
 ```bash
 # Analyze Equinor
-docker-compose run analyzer EQNR.OL
+uv run python analyze.py EQNR.OL
 
 # Analyze DNB (auto-adds .OL suffix)
-docker-compose run analyzer DNB
+uv run python analyze.py DNB
 
 # With verbose logging
-docker-compose run analyzer-verbose EQNR.OL
+uv run python analyze.py TEL.OL --verbose
 
-# Save output to file
-docker-compose run analyzer EQNR.OL > reports/eqnr_report.md
+# Save to custom output file
+uv run python analyze.py EQNR.OL --output my_report.md
 ```
+
+Reports are saved to `./data/reports/` as both `.md` and `.pdf` files.
 
 ### Scheduling with Cron
 
 Add to crontab for automated daily analysis:
 ```bash
 # Run every weekday at 18:00 (after market close)
-0 18 * * 1-5 cd /path/to/finance-agents && docker-compose run analyzer EQNR.OL > reports/eqnr_$(date +\%Y\%m\%d).md 2>&1
-```
-
-## Running Without Docker
-
-You can also run directly with Python:
-
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set environment variables
-export ANTHROPIC_API_KEY="your-key-here"
-export DB_PATH="./data/finance_agents.db"
-export REPORTS_DIR="./data/reports"
-
-# Run analysis
-python analyze.py EQNR.OL
-
-# With options
-python analyze.py EQNR.OL --verbose --output report.md
+0 18 * * 1-5 cd /path/to/finance-agents && uv run python analyze.py EQNR.OL
 ```
 
 ## Project Structure
@@ -122,18 +114,19 @@ python analyze.py EQNR.OL --verbose --output report.md
 finance-agents/
 ├── analyze.py          # CLI entry point and LangGraph workflow
 ├── config.py           # Configuration and prompts
+├── visualization.py    # Price chart generation
+├── utils.py            # Utility functions
 ├── agents/
 │   ├── context.py      # Historical context retrieval
 │   ├── collector.py    # Data collection from external sources
 │   ├── analyzer.py     # AI-powered analysis
-│   └── reporter.py     # Report generation
+│   └── reporter.py     # Report generation (MD + PDF)
 ├── data/
 │   ├── sources.py      # API integrations (yfinance, RSS feeds)
 │   └── storage.py      # SQLite database operations
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
+├── pyproject.toml      # Project dependencies
+├── uv.lock             # Locked dependency versions
+└── .env                # Environment variables (not committed)
 ```
 
 ## Database Schema
@@ -154,6 +147,12 @@ Edit `config.py` to modify:
 - **Model selection**: Change Haiku/Sonnet models
 - **Prompts**: Customize extraction and analysis prompts
 - **Data fetching**: Adjust history depth, rate limits
+
+Environment variables in `.env`:
+
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `DB_PATH`: Path to SQLite database (default: `./data/finance_agents.db`)
+- `REPORTS_DIR`: Directory for reports (default: `./data/reports`)
 
 ## Cost Optimization
 
