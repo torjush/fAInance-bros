@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import quote_plus
 import xml.etree.ElementTree as ET
@@ -156,7 +156,7 @@ class GoogleNewsRSS:
                             from email.utils import parsedate_to_datetime
                             published = parsedate_to_datetime(pub_date.text).isoformat()
                         except Exception:
-                            published = datetime.utcnow().isoformat()
+                            published = datetime.now(timezone.utc).isoformat()
 
                     news_items.append({
                         "title": title.text,
@@ -249,7 +249,7 @@ class OsloBorsNewsweb:
                             from email.utils import parsedate_to_datetime
                             published = parsedate_to_datetime(pub_date.text).isoformat()
                         except Exception:
-                            published = datetime.utcnow().isoformat()
+                            published = datetime.now(timezone.utc).isoformat()
 
                     filings.append({
                         "title": title.text,
@@ -295,7 +295,7 @@ class OsloBorsNewsweb:
                     filings.append({
                         "title": title.strip(),
                         "url": f"https://newsweb.oslobors.no{path}",
-                        "published": datetime.utcnow().isoformat(),
+                        "published": datetime.now(timezone.utc).isoformat(),
                         "filing_type": "Filing",
                         "description": "",
                     })
@@ -382,7 +382,7 @@ async def fetch_all_data(
         prices = YFinanceSource.get_price_history(
             ticker,
             start_date=start_date,
-            end_date=datetime.utcnow().strftime("%Y-%m-%d"),
+            end_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         )
     else:
         prices = YFinanceSource.get_price_history(ticker, period="1y")

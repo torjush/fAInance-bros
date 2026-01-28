@@ -18,7 +18,7 @@ import argparse
 import asyncio
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, TypedDict
 
 from langgraph.graph import StateGraph, END
@@ -182,7 +182,7 @@ class StockAnalyzerWorkflow:
                 return {"chart_path": None, "status": "chart_skipped"}
 
             # Generate chart path
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             ticker_safe = state["ticker"].replace(".", "_")
             chart_path = f"{self.config.reports_dir}/{ticker_safe}_{timestamp}.png"
 
