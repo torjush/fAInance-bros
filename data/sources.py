@@ -316,7 +316,8 @@ class NorgesBankAPI:
     @staticmethod
     async def get_key_policy_rate(session: aiohttp.ClientSession = None) -> dict | None:
         """Get the current key policy rate from Norges Bank."""
-        url = f"{NorgesBankAPI.BASE_URL}/data/IR/B.KPRA.SD.NOK?format=sdmx-json&lastNObservations=1"
+        # Use the general IR endpoint which returns all interest rate data
+        url = f"{NorgesBankAPI.BASE_URL}/data/IR?format=sdmx-json&lastNObservations=1"
 
         close_session = False
         if session is None:
@@ -331,16 +332,17 @@ class NorgesBankAPI:
 
                 data = await response.json()
 
-                # Parse SDMX-JSON response
+                # Parse SDMX-JSON response - find the key policy rate series
                 observations = data.get("data", {}).get("dataSets", [{}])[0].get("series", {})
                 if observations:
+                    # Look for daily (B) key policy rate (SD)
                     for series_key, series_data in observations.items():
                         obs = series_data.get("observations", {})
                         if obs:
                             latest_key = max(obs.keys())
                             value = obs[latest_key][0]
                             return {
-                                "rate": value,
+                                "rate": float(value),
                                 "type": "Key Policy Rate",
                                 "currency": "NOK",
                             }
