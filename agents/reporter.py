@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
+from markdown_pdf import MarkdownPdf, Section
 
 from config import Config, PROMPTS
 from data.storage import Storage
@@ -200,19 +201,34 @@ This report was generated with limited analysis due to a processing error.
 """
 
     def _save_report_file(self, ticker: str, report: str):
-        """Save report to file system."""
+        """Save report to file system as markdown and PDF."""
         try:
             reports_dir = Path(self.config.reports_dir)
             reports_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            filename = f"{ticker.replace('.', '_')}_{timestamp}.md"
-            filepath = reports_dir / filename
+            base_filename = f"{ticker.replace('.', '_')}_{timestamp}"
 
-            with open(filepath, "w", encoding="utf-8") as f:
+            # Save markdown
+            md_filepath = reports_dir / f"{base_filename}.md"
+            with open(md_filepath, "w", encoding="utf-8") as f:
                 f.write(report)
+            logger.info(f"Report saved to {md_filepath}")
 
-            logger.info(f"Report saved to {filepath}")
+            # Generate PDF
+            pdf_filepath = reports_dir / f"{base_filename}.pdf"
+            self._generate_pdf(report, pdf_filepath, reports_dir)
 
         except Exception as e:
             logger.warning(f"Failed to save report file: {e}")
+
+    def _generate_pdf(self, report: str, output_path: Path, base_dir: Path):
+        """Convert markdown report to PDF."""
+        try:
+            pdf = MarkdownPdf()
+            pdf.add_section(Section(report, root=str(base_dir)))
+            pdf.save(str(output_path))
+            logger.info(f"PDF saved to {output_path}")
+
+        except Exception as e:
+            logger.warning(f"Failed to generate PDF: {e}")

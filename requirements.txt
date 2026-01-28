@@ -8,6 +8,9 @@ aiohttp>=3.9.0
 pandas>=2.0.0
 matplotlib>=3.8.0
 
+# Report generation
+markdown-pdf>=1.3
+
 # Utilities (standard library used where possible)
 # xml.etree.ElementTree - built-in
 # sqlite3 - built-in

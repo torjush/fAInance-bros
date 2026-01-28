@@ -326,15 +326,16 @@ Examples:
         workflow = StockAnalyzerWorkflow(config)
         result = workflow.run(ticker)
 
-        # Output report
-        report = result.get("report", "")
-
+        # Output report to custom location if specified
         if args.output:
+            report = result.get("report", "")
             with open(args.output, "w", encoding="utf-8") as f:
                 f.write(report)
             logger.info(f"Report saved to {args.output}")
-        else:
-            print(report)
+
+        # Log chart location
+        if result.get("chart_path"):
+            logger.info(f"Chart saved to {result['chart_path']}")
 
         # Check for errors
         if result.get("error"):
