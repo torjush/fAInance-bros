@@ -54,8 +54,10 @@ class AnalyzerAgent:
         company_name = stock_info.get("name", ticker)
         sector = stock_info.get("sector", "Unknown")
 
-        # Prepare price data for analysis
+        # Prepare price data for analysis - use collected prices, fall back to context
         prices = collected_data.get("prices", [])
+        if not prices:
+            prices = context.get("price_history", [])
         price_stats = self._calculate_price_stats(prices)
         recent_prices = self._format_recent_prices(prices[:30])  # Last 30 days
 

@@ -73,6 +73,9 @@ class YFinanceSource:
                     "volume": int(row["Volume"]) if row["Volume"] else None,
                 })
 
+            # Sort descending (newest first) for consistent access patterns
+            prices.sort(key=lambda x: x["date"], reverse=True)
+
             logger.info(f"Fetched {len(prices)} price records for {ticker}")
             return prices
 
