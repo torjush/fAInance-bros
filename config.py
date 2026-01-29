@@ -12,8 +12,8 @@ class Config:
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
     # Model settings
-    extraction_model: str = "claude-3-5-haiku-20241022"  # Cheaper for extraction
-    analysis_model: str = "claude-sonnet-4-20250514"     # Better reasoning
+    extraction_model: str = "claude-haiku-4-5-20251001"  # Cheaper for extraction
+    analysis_model: str = "claude-sonnet-4-5-20250929"   # Better reasoning
 
     # Database
     db_path: str = os.getenv("DB_PATH", "/data/finance_agents.db")
