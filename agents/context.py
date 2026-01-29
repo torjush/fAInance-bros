@@ -1,7 +1,7 @@
 """Context Agent - Retrieves historical context from the database."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from data.storage import Storage
@@ -50,7 +50,7 @@ class ContextAgent:
         }
 
         # Get price history (last 90 days for trend analysis)
-        ninety_days_ago = (datetime.utcnow() - timedelta(days=90)).strftime("%Y-%m-%d")
+        ninety_days_ago = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
         price_history = self.storage.get_prices(ticker, start_date=ninety_days_ago)
 
         # Get cached news and filings

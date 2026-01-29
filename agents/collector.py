@@ -3,7 +3,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import anthropic
@@ -100,7 +100,7 @@ class CollectorAgent:
             "news": processed_news,
             "filings": processed_filings,
             "macro": raw_data.get("macro"),
-            "fetch_timestamp": datetime.utcnow().isoformat(),
+            "fetch_timestamp": datetime.now(timezone.utc).isoformat(),
             "is_incremental": start_date is not None,
         }
 

@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import anthropic
@@ -108,7 +108,7 @@ class AnalyzerAgent:
         analysis["ticker"] = ticker
         analysis["company_name"] = company_name
         analysis["sector"] = sector
-        analysis["analysis_timestamp"] = datetime.utcnow().isoformat()
+        analysis["analysis_timestamp"] = datetime.now(timezone.utc).isoformat()
         analysis["price_stats"] = price_stats
         analysis["recent_prices"] = prices[:30]
 

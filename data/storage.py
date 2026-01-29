@@ -4,7 +4,7 @@ import json
 import logging
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -156,7 +156,7 @@ class Storage:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE companies SET last_analyzed = ? WHERE ticker = ?
-            """, (datetime.utcnow().isoformat(), ticker))
+            """, (datetime.now(timezone.utc).isoformat(), ticker))
 
     def get_last_analyzed(self, ticker: str) -> datetime | None:
         """Get last analyzed timestamp for a company."""
