@@ -49,22 +49,6 @@ Return a JSON object with:
 
 Only return valid JSON, no other text.""",
 
-    "extract_filing": """Extract structured information from the following regulatory filing for {ticker}.
-
-Filing:
-{filing_text}
-
-Return a JSON object with:
-{{
-    "filing_type": "type of filing (e.g., Annual Report, Quarterly Report, Insider Trade, etc.)",
-    "headline": "filing headline/title",
-    "summary": "2-3 sentence summary of key points",
-    "material_impact": "high" | "medium" | "low",
-    "key_data": {{"any important numerical data, dates, or facts"}}
-}}
-
-Only return valid JSON, no other text.""",
-
     "analyze_data": """You are a financial analyst specializing in Oslo Stock Exchange companies.
 
 Analyze the following data for {ticker} ({company_name}):
@@ -81,20 +65,15 @@ Analyze the following data for {ticker} ({company_name}):
 ## Recent News
 {news_data}
 
-## Recent Regulatory Filings
-{filings_data}
-
 Provide a comprehensive analysis covering:
 
 1. **Price Action Analysis**: Analyze recent price movements, trends, support/resistance levels, and volume patterns.
 
 2. **News Sentiment**: Summarize the overall news sentiment and highlight the most significant news items.
 
-3. **Regulatory Developments**: Analyze any important filings or regulatory disclosures.
+3. **Risk Factors**: Identify any emerging risks based on the data.
 
-4. **Risk Factors**: Identify any emerging risks based on the data.
-
-5. **Key Observations**: 3-5 bullet points of the most important takeaways.
+4. **Key Observations**: 3-5 bullet points of the most important takeaways.
 
 Return a JSON object with your analysis:
 {{
@@ -111,11 +90,6 @@ Return a JSON object with your analysis:
         "confidence": 0.0-1.0,
         "key_themes": ["list of themes"],
         "summary": "2-3 sentence summary"
-    }},
-    "regulatory_analysis": {{
-        "material_events": ["list of significant filings/events"],
-        "compliance_concerns": ["any concerns noted"],
-        "summary": "1-2 sentence summary"
     }},
     "risk_factors": [
         {{"risk": "description", "severity": "high" | "medium" | "low"}}
@@ -143,9 +117,6 @@ Using the following analysis data, generate a professional markdown report.
 
 ## Sentiment Analysis
 {sentiment_analysis}
-
-## Regulatory Analysis
-{regulatory_analysis}
 
 ## Risk Factors
 {risk_factors}

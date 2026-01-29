@@ -111,19 +111,6 @@ class Storage:
                 )
             """)
 
-            # Filings cache table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS filings_cache (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ticker TEXT NOT NULL,
-                    url TEXT UNIQUE,
-                    title TEXT,
-                    published TIMESTAMP,
-                    filing_type TEXT,
-                    extracted_data TEXT,
-                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
 
             logger.info(f"Database initialized at {self.db_path}")
 
@@ -346,59 +333,3 @@ class Storage:
             cursor.execute("SELECT 1 FROM news_cache WHERE url = ?", (url,))
             return cursor.fetchone() is not None
 
-    # Filings cache operations
-    def save_filing(
-        self,
-        ticker: str,
-        url: str,
-        title: str,
-        published: str,
-        filing_type: str = None,
-        extracted_data: dict = None,
-    ):
-        """Save a filing to cache."""
-        with self._get_conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO filings_cache (ticker, url, title, published, filing_type, extracted_data)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(url) DO UPDATE SET
-                    extracted_data = COALESCE(excluded.extracted_data, filings_cache.extracted_data)
-            """, (
-                ticker,
-                url,
-                title,
-                published,
-                filing_type,
-                json.dumps(extracted_data) if extracted_data else None,
-            ))
-
-    def get_cached_filings(self, ticker: str, since: str = None) -> list[dict]:
-        """Get cached filings for a ticker."""
-        with self._get_conn() as conn:
-            cursor = conn.cursor()
-            query = "SELECT * FROM filings_cache WHERE ticker = ?"
-            params = [ticker]
-
-            if since:
-                query += " AND published >= ?"
-                params.append(since)
-
-            query += " ORDER BY published DESC"
-            cursor.execute(query, params)
-
-            rows = [dict(row) for row in cursor.fetchall()]
-            for row in rows:
-                if row.get("extracted_data"):
-                    try:
-                        row["extracted_data"] = json.loads(row["extracted_data"])
-                    except json.JSONDecodeError:
-                        pass
-            return rows
-
-    def filing_exists(self, url: str) -> bool:
-        """Check if a filing is already cached."""
-        with self._get_conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1 FROM filings_cache WHERE url = ?", (url,))
-            return cursor.fetchone() is not None

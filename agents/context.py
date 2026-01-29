@@ -41,11 +41,10 @@ class ContextAgent:
         # Get last analysis timestamp
         last_analyzed = self.storage.get_last_analyzed(ticker)
 
-        # Get previous insights (last 5 of each type)
+        # Get previous insights (last few of each type)
         previous_insights = {
             "price_analysis": self.storage.get_insights(ticker, "price_analysis", limit=3),
             "sentiment_analysis": self.storage.get_insights(ticker, "sentiment_analysis", limit=3),
-            "regulatory_analysis": self.storage.get_insights(ticker, "regulatory_analysis", limit=3),
             "full_analysis": self.storage.get_insights(ticker, "full_analysis", limit=2),
         }
 
@@ -53,9 +52,8 @@ class ContextAgent:
         ninety_days_ago = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
         price_history = self.storage.get_prices(ticker, start_date=ninety_days_ago)
 
-        # Get cached news and filings
+        # Get cached news
         cached_news = self.storage.get_cached_news(ticker, since=ninety_days_ago)
-        cached_filings = self.storage.get_cached_filings(ticker, since=ninety_days_ago)
 
         # Get latest report
         latest_report = self.storage.get_latest_report(ticker)
@@ -67,7 +65,6 @@ class ContextAgent:
             "previous_insights": previous_insights,
             "price_history": price_history,
             "cached_news": cached_news,
-            "cached_filings": cached_filings,
             "latest_report": latest_report,
             "is_new_ticker": company is None,
         }
@@ -88,8 +85,7 @@ class ContextAgent:
             f"Context gathered for {ticker}: "
             f"{'new ticker' if context['is_new_ticker'] else 'existing'}, "
             f"{len(price_history)} price records, "
-            f"{len(cached_news)} cached news, "
-            f"{len(cached_filings)} cached filings"
+            f"{len(cached_news)} cached news"
         )
 
         return context
@@ -145,15 +141,5 @@ class ContextAgent:
                     sentiment = content.get("overall_sentiment", "unknown")
                     themes = content.get("key_themes", [])
                     sections.append(f"- Sentiment: {sentiment}, Themes: {', '.join(themes[:3])}")
-
-        # Regulatory analysis
-        if insights.get("regulatory_analysis"):
-            sections.append("\n### Previous Regulatory Analyses")
-            for insight in insights["regulatory_analysis"][:2]:
-                content = insight.get("content", {})
-                if isinstance(content, dict):
-                    events = content.get("material_events", [])
-                    if events:
-                        sections.append(f"- Material events: {', '.join(events[:3])}")
 
         return "\n".join(sections) if sections else "No previous analysis available."

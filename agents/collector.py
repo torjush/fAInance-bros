@@ -23,8 +23,7 @@ class CollectorAgent:
     This agent:
     - Fetches stock prices via yfinance
     - Fetches news via Google News RSS
-    - Fetches regulatory filings via Oslo Børs Newsweb
-    - Uses Claude Haiku to extract structured data from news/filings
+    - Uses Claude Haiku to extract structured data from news
     - Caches all data to avoid re-fetching
     """
 
@@ -88,17 +87,12 @@ class CollectorAgent:
         news_items = raw_data.get("news", [])
         processed_news = await self._process_news(ticker, news_items)
 
-        # Process and cache filings
-        filings = raw_data.get("filings", [])
-        processed_filings = await self._process_filings(ticker, filings)
-
         # Compile results
         result = {
             "ticker": ticker,
             "stock_info": stock_info,
             "prices": prices,
             "news": processed_news,
-            "filings": processed_filings,
             "macro": raw_data.get("macro"),
             "fetch_timestamp": datetime.now(timezone.utc).isoformat(),
             "is_incremental": start_date is not None,
@@ -106,7 +100,7 @@ class CollectorAgent:
 
         logger.info(
             f"Data collection complete for {ticker}: "
-            f"{len(prices)} prices, {len(processed_news)} news, {len(processed_filings)} filings"
+            f"{len(prices)} prices, {len(processed_news)} news"
         )
 
         return result
@@ -153,48 +147,6 @@ class CollectorAgent:
 
         return processed[:30]  # Limit to most recent 30
 
-    async def _process_filings(
-        self,
-        ticker: str,
-        filings: list[dict],
-    ) -> list[dict]:
-        """Process filings, extracting structured data with LLM."""
-        processed = []
-
-        for filing in filings:
-            url = filing.get("url", "")
-
-            # Check if already cached
-            if self.storage.filing_exists(url):
-                logger.debug(f"Filing already cached: {url}")
-                continue
-
-            # Extract structured data using Haiku
-            extracted = await self._extract_filing_data(ticker, filing)
-
-            # Save to cache
-            self.storage.save_filing(
-                ticker=ticker,
-                url=url,
-                title=filing.get("title", ""),
-                published=filing.get("published"),
-                filing_type=filing.get("filing_type"),
-                extracted_data=extracted,
-            )
-
-            processed.append({
-                **filing,
-                "extracted": extracted,
-            })
-
-        # Also include recently cached filings
-        cached = self.storage.get_cached_filings(ticker)
-        for item in cached:
-            if item not in processed:
-                processed.append(item)
-
-        return processed[:20]  # Limit to most recent 20
-
     async def _extract_news_data(
         self,
         ticker: str,
@@ -231,43 +183,6 @@ Published: {news_item.get('published', 'Unknown')}
             return None
         except Exception as e:
             logger.error(f"Error extracting news data: {e}")
-            return None
-
-    async def _extract_filing_data(
-        self,
-        ticker: str,
-        filing: dict,
-    ) -> dict | None:
-        """Use Claude Haiku to extract structured data from filing."""
-        try:
-            filing_text = f"""
-Title: {filing.get('title', 'No title')}
-Type: {filing.get('filing_type', 'Unknown')}
-Published: {filing.get('published', 'Unknown')}
-Description: {filing.get('description', 'No description available')}
-"""
-
-            prompt = PROMPTS["extract_filing"].format(
-                ticker=ticker,
-                filing_text=filing_text,
-            )
-
-            response = self.client.messages.create(
-                model=self.config.extraction_model,
-                max_tokens=1024,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            content = response.content[0].text.strip()
-            content = strip_code_blocks(content)
-            return json.loads(content)
-
-        except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse filing extraction JSON: {e}")
-            logger.warning(f"Response (first 300 chars): {content[:300]}")
-            return None
-        except Exception as e:
-            logger.error(f"Error extracting filing data: {e}")
             return None
 
     def calculate_price_stats(self, prices: list[dict]) -> dict:

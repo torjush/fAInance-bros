@@ -62,9 +62,6 @@ class AnalyzerAgent:
         # Prepare news data
         news_data = self._format_news_data(collected_data.get("news", []))
 
-        # Prepare filings data
-        filings_data = self._format_filings_data(collected_data.get("filings", []))
-
         # Get previous insights context
         previous_insights = context.get("previous_insights", {})
         previous_insights_text = self._format_previous_insights(previous_insights)
@@ -77,7 +74,6 @@ class AnalyzerAgent:
             price_data=recent_prices,
             price_stats=json.dumps(price_stats, indent=2),
             news_data=news_data,
-            filings_data=filings_data,
         )
 
         # Call Claude Sonnet for analysis
@@ -228,33 +224,6 @@ class AnalyzerAgent:
 
         return "\n".join(lines)
 
-    def _format_filings_data(self, filings: list[dict]) -> str:
-        """Format filings data for the prompt."""
-        if not filings:
-            return "No recent regulatory filings available."
-
-        lines = []
-        for filing in filings[:10]:  # Limit to 10 items
-            title = filing.get("title", "No title")
-            filing_type = filing.get("filing_type", "Unknown")
-            published = filing.get("published", "Unknown date")
-            extracted = filing.get("extracted_data") or filing.get("extracted", {})
-
-            lines.append(f"### {title}")
-            lines.append(f"Type: {filing_type} | Published: {published}")
-
-            if extracted:
-                if isinstance(extracted, dict):
-                    impact = extracted.get("material_impact", "unknown")
-                    summary = extracted.get("summary", "")
-                    lines.append(f"Material Impact: {impact}")
-                    if summary:
-                        lines.append(f"Summary: {summary}")
-
-            lines.append("")
-
-        return "\n".join(lines)
-
     def _format_previous_insights(self, insights: dict) -> str:
         """Format previous insights for context."""
         if not any(insights.values()):
@@ -294,14 +263,6 @@ class AnalyzerAgent:
                 summary=analysis["sentiment_analysis"].get("summary", ""),
             )
 
-        if "regulatory_analysis" in analysis:
-            self.storage.save_insight(
-                ticker=ticker,
-                insight_type="regulatory_analysis",
-                content=analysis["regulatory_analysis"],
-                summary=analysis["regulatory_analysis"].get("summary", ""),
-            )
-
         # Save full analysis
         self.storage.save_insight(
             ticker=ticker,
@@ -326,11 +287,6 @@ class AnalyzerAgent:
                 "confidence": 0.0,
                 "key_themes": [],
                 "summary": "Unable to complete sentiment analysis.",
-            },
-            "regulatory_analysis": {
-                "material_events": [],
-                "compliance_concerns": [],
-                "summary": "Unable to complete regulatory analysis.",
             },
             "risk_factors": [],
             "key_observations": ["Analysis incomplete - please review raw data"],

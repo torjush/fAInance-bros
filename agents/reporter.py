@@ -49,12 +49,11 @@ class ReporterAgent:
         # Extract data for the prompt
         company_name = analysis.get("company_name", ticker)
         sector = analysis.get("sector", "Unknown")
-        analysis_date = analysis.get("analysis_timestamp", datetime.utcnow().isoformat())
+        analysis_date = analysis.get("analysis_timestamp", datetime.now(timezone.utc).isoformat())
 
         # Format analysis components
         price_analysis = json.dumps(analysis.get("price_analysis", {}), indent=2)
         sentiment_analysis = json.dumps(analysis.get("sentiment_analysis", {}), indent=2)
-        regulatory_analysis = json.dumps(analysis.get("regulatory_analysis", {}), indent=2)
         risk_factors = json.dumps(analysis.get("risk_factors", []), indent=2)
         key_observations = "\n".join(f"- {obs}" for obs in analysis.get("key_observations", []))
         outlook = analysis.get("outlook", "No outlook available")
@@ -70,7 +69,6 @@ class ReporterAgent:
             analysis_date=analysis_date,
             price_analysis=price_analysis,
             sentiment_analysis=sentiment_analysis,
-            regulatory_analysis=regulatory_analysis,
             risk_factors=risk_factors,
             key_observations=key_observations,
             outlook=outlook,
@@ -158,7 +156,7 @@ class ReporterAgent:
 
     def _create_fallback_report(self, ticker: str, analysis: dict) -> str:
         """Create a basic report if LLM generation fails."""
-        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         company_name = analysis.get("company_name", ticker)
 
         price_stats = analysis.get("price_stats", {})
@@ -206,7 +204,7 @@ This report was generated with limited analysis due to a processing error.
             reports_dir = Path(self.config.reports_dir)
             reports_dir.mkdir(parents=True, exist_ok=True)
 
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             base_filename = f"{ticker.replace('.', '_')}_{timestamp}"
 
             # Save markdown

@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import quote_plus
@@ -172,142 +171,6 @@ class GoogleNewsRSS:
         return news_items
 
 
-class OsloBorsNewsweb:
-    """Oslo Børs Newsweb RSS feed for regulatory filings."""
-
-    @staticmethod
-    async def fetch_filings(
-        ticker: str,
-        max_results: int = 30,
-        session: aiohttp.ClientSession = None,
-    ) -> list[dict]:
-        """
-        Fetch regulatory filings from Oslo Børs Newsweb.
-
-        Note: The ticker should be without the .OL suffix (e.g., "EQNR" not "EQNR.OL")
-        """
-        # Remove .OL suffix if present
-        clean_ticker = ticker.replace(".OL", "").replace(".ol", "")
-
-        close_session = False
-        if session is None:
-            session = aiohttp.ClientSession()
-            close_session = True
-
-        try:
-            # Try RSS feed first
-            rss_url = f"https://newsweb.oslobors.no/rss?issuer={clean_ticker}"
-
-            async with session.get(
-                rss_url,
-                timeout=aiohttp.ClientTimeout(total=30),
-                headers={"User-Agent": "Mozilla/5.0 (compatible; StockAnalyzer/1.0)"}
-            ) as response:
-                if response.status != 200:
-                    logger.warning(f"Newsweb RSS returned status {response.status}, trying HTML scrape")
-                    return await OsloBorsNewsweb._scrape_html(clean_ticker, max_results, session)
-
-                content = await response.text()
-                filings = OsloBorsNewsweb._parse_rss(content, max_results)
-
-                if not filings:
-                    # Fallback to HTML scraping if RSS is empty
-                    return await OsloBorsNewsweb._scrape_html(clean_ticker, max_results, session)
-
-                return filings
-
-        except Exception as e:
-            logger.error(f"Error fetching Newsweb filings: {e}")
-            return []
-        finally:
-            if close_session:
-                await session.close()
-
-    @staticmethod
-    def _parse_rss(content: str, max_results: int) -> list[dict]:
-        """Parse Newsweb RSS feed."""
-        filings = []
-
-        try:
-            root = ET.fromstring(content)
-            channel = root.find("channel")
-
-            if channel is None:
-                return []
-
-            for item in channel.findall("item")[:max_results]:
-                title = item.find("title")
-                link = item.find("link")
-                pub_date = item.find("pubDate")
-                description = item.find("description")
-                category = item.find("category")
-
-                if title is not None and link is not None:
-                    published = None
-                    if pub_date is not None and pub_date.text:
-                        try:
-                            from email.utils import parsedate_to_datetime
-                            published = parsedate_to_datetime(pub_date.text).isoformat()
-                        except Exception:
-                            published = datetime.now(timezone.utc).isoformat()
-
-                    filings.append({
-                        "title": title.text,
-                        "url": link.text,
-                        "published": published,
-                        "filing_type": category.text if category is not None else "Filing",
-                        "description": description.text if description is not None else "",
-                    })
-
-        except ET.ParseError as e:
-            logger.error(f"Error parsing Newsweb RSS: {e}")
-
-        logger.info(f"Parsed {len(filings)} filings from Newsweb RSS")
-        return filings
-
-    @staticmethod
-    async def _scrape_html(
-        ticker: str,
-        max_results: int,
-        session: aiohttp.ClientSession,
-    ) -> list[dict]:
-        """Fallback HTML scraping for Newsweb."""
-        url = f"https://newsweb.oslobors.no/search?category=&issuer={ticker}&fromDate=&toDate=&market=&messageTitle="
-
-        try:
-            async with session.get(
-                url,
-                timeout=aiohttp.ClientTimeout(total=30),
-                headers={"User-Agent": "Mozilla/5.0 (compatible; StockAnalyzer/1.0)"}
-            ) as response:
-                if response.status != 200:
-                    logger.error(f"Newsweb HTML returned status {response.status}")
-                    return []
-
-                html = await response.text()
-
-                # Simple regex-based extraction (basic fallback)
-                pattern = r'href="(/message/\d+)"[^>]*>([^<]+)</a>'
-                matches = re.findall(pattern, html)
-
-                filings = []
-                for path, title in matches[:max_results]:
-                    filings.append({
-                        "title": title.strip(),
-                        "url": f"https://newsweb.oslobors.no{path}",
-                        "published": datetime.now(timezone.utc).isoformat(),
-                        "filing_type": "Filing",
-                        "description": "",
-                    })
-
-                logger.info(f"Scraped {len(filings)} filings from Newsweb HTML")
-                return filings
-
-        except Exception as e:
-            logger.error(f"Error scraping Newsweb HTML: {e}")
-            return []
-
-
 class NorgesBankAPI:
     """Norges Bank API for key policy rate (macro context)."""
 
@@ -389,14 +252,13 @@ async def fetch_all_data(
     else:
         prices = YFinanceSource.get_price_history(ticker, period="1y")
 
-    # Fetch news and filings in parallel
+    # Fetch news and macro data in parallel
     async with aiohttp.ClientSession() as session:
         news_task = GoogleNewsRSS.fetch_news(company_name, session=session)
-        filings_task = OsloBorsNewsweb.fetch_filings(ticker, session=session)
         macro_task = NorgesBankAPI.get_key_policy_rate(session=session)
 
-        news, filings, macro = await asyncio.gather(
-            news_task, filings_task, macro_task,
+        news, macro = await asyncio.gather(
+            news_task, macro_task,
             return_exceptions=True,
         )
 
@@ -404,9 +266,6 @@ async def fetch_all_data(
         if isinstance(news, Exception):
             logger.error(f"News fetch failed: {news}")
             news = []
-        if isinstance(filings, Exception):
-            logger.error(f"Filings fetch failed: {filings}")
-            filings = []
         if isinstance(macro, Exception):
             logger.error(f"Macro data fetch failed: {macro}")
             macro = None
@@ -415,6 +274,5 @@ async def fetch_all_data(
         "stock_info": stock_info,
         "prices": prices,
         "news": news,
-        "filings": filings,
         "macro": macro,
     }
