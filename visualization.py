@@ -78,15 +78,11 @@ def plot_price_chart(
 
             # Plot support levels (green dashed lines)
             for level in support_levels:
-                if isinstance(level, (int, float)) and level > 0:
-                    ax.axhline(y=level, color='#00C853', linestyle='--', linewidth=1.5, alpha=0.7)
-                    ax.text(dates[-1], level, f' Support: {level}', va='center', fontsize=9, color='#00C853')
+                _plot_sr_level(ax, level, dates, color='#00C853', label='Support')
 
             # Plot resistance levels (red dashed lines)
             for level in resistance_levels:
-                if isinstance(level, (int, float)) and level > 0:
-                    ax.axhline(y=level, color='#FF1744', linestyle='--', linewidth=1.5, alpha=0.7)
-                    ax.text(dates[-1], level, f' Resistance: {level}', va='center', fontsize=9, color='#FF1744')
+                _plot_sr_level(ax, level, dates, color='#FF1744', label='Resistance')
 
         # Formatting
         ax.set_title(f'{ticker} - Price Chart with Technical Analysis', fontsize=14, fontweight='bold')
@@ -141,3 +137,36 @@ def _calculate_ma(prices: list[float], period: int) -> list[float]:
         window = prices[i - period + 1:i + 1]
         ma.append(sum(window) / period)
     return ma
+
+
+def _plot_sr_level(ax, level, dates: list, color: str, label: str):
+    """Plot a support/resistance level with appropriate date range."""
+    # Handle both dict format (with dates) and simple float format
+    if isinstance(level, dict):
+        price = level.get('price')
+        start_date_str = level.get('start_date')
+        end_date_str = level.get('end_date')
+    elif isinstance(level, (int, float)):
+        price = level
+        start_date_str = None
+        end_date_str = None
+    else:
+        return
+
+    if not price or price <= 0:
+        return
+
+    # Determine x-axis range for the line
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        # Extend to current date if end_date is recent
+        if dates and end_date >= dates[-5]:  # Within last 5 data points
+            end_date = dates[-1]
+    else:
+        # Fallback: span entire chart
+        start_date = dates[0]
+        end_date = dates[-1]
+
+    ax.hlines(y=price, xmin=start_date, xmax=end_date, color=color, linestyle='--', linewidth=1.5, alpha=0.7)
+    ax.text(end_date, price, f' {label}: {price}', va='center', fontsize=9, color=color)

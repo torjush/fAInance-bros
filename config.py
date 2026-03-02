@@ -75,13 +75,13 @@ Provide a comprehensive analysis covering:
 
 4. **Key Observations**: 3-5 bullet points of the most important takeaways.
 
+Note: Support and resistance levels are calculated algorithmically and will be added separately. Focus your analysis on trend, volatility, and interpretation.
+
 Return a JSON object with your analysis:
 {{
     "price_analysis": {{
         "trend": "bullish" | "bearish" | "neutral",
         "trend_strength": "strong" | "moderate" | "weak",
-        "support_levels": [list of price levels],
-        "resistance_levels": [list of price levels],
         "volatility": "high" | "medium" | "low",
         "summary": "2-3 sentence summary"
     }},

@@ -10,6 +10,7 @@ import anthropic
 from config import Config, PROMPTS
 from data.storage import Storage
 from utils import strip_code_blocks
+from technical import calculate_support_resistance
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +55,33 @@ class AnalyzerAgent:
         company_name = stock_info.get("name", ticker)
         sector = stock_info.get("sector", "Unknown")
 
-        # Prepare price data for analysis - use collected prices, fall back to context
-        prices = collected_data.get("prices", [])
-        if not prices:
-            prices = context.get("price_history", [])
+        # Combine new prices with historical context (both sorted newest-first)
+        new_prices = collected_data.get("prices", [])
+        historical_prices = context.get("price_history", [])
+
+        # Merge: new prices first, then historical (avoiding duplicates by date)
+        seen_dates = set()
+        prices = []
+        for p in new_prices + historical_prices:
+            if p["date"] not in seen_dates:
+                seen_dates.add(p["date"])
+                prices.append(p)
+
+        # Ensure sorted newest-first
+        prices.sort(key=lambda x: x["date"], reverse=True)
         price_stats = self._calculate_price_stats(prices)
-        recent_prices = self._format_recent_prices(prices[:30])  # Last 30 days
+        recent_prices = self._format_recent_prices(prices[:60])  # Last 60 days
+
+        # Calculate support/resistance algorithmically
+        sr_levels = calculate_support_resistance(prices, n_clusters=3, lookback_days=60)
+        support_levels = [
+            {"price": l.price, "start_date": l.start_date, "end_date": l.end_date}
+            for l in sr_levels["support_levels"]
+        ]
+        resistance_levels = [
+            {"price": l.price, "start_date": l.start_date, "end_date": l.end_date}
+            for l in sr_levels["resistance_levels"]
+        ]
 
         # Prepare news data
         news_data = self._format_news_data(collected_data.get("news", []))
@@ -99,6 +121,12 @@ class AnalyzerAgent:
             logger.error(f"Error during analysis: {e}")
             analysis = self._create_fallback_analysis(price_stats)
 
+        # Override LLM-generated S/R with algorithmic values
+        if "price_analysis" not in analysis:
+            analysis["price_analysis"] = {}
+        analysis["price_analysis"]["support_levels"] = support_levels
+        analysis["price_analysis"]["resistance_levels"] = resistance_levels
+
         # Save insights to database
         self._save_insights(ticker, analysis)
 
@@ -108,7 +136,7 @@ class AnalyzerAgent:
         analysis["sector"] = sector
         analysis["analysis_timestamp"] = datetime.now(timezone.utc).isoformat()
         analysis["price_stats"] = price_stats
-        analysis["recent_prices"] = prices[:30]
+        analysis["recent_prices"] = prices[:60]
 
         logger.info(f"Analysis complete for {ticker}")
         return analysis
@@ -279,8 +307,6 @@ class AnalyzerAgent:
             "price_analysis": {
                 "trend": "neutral",
                 "trend_strength": "weak",
-                "support_levels": [],
-                "resistance_levels": [],
                 "volatility": "unknown",
                 "summary": "Unable to complete full price analysis.",
             },
