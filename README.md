@@ -9,7 +9,6 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 - **Multiple data sources**:
   - Stock prices via yfinance
   - News via Google News RSS
-  - Regulatory filings via Oslo Børs Newsweb RSS
   - Macro data (key policy rate) from Norges Bank
 - **Persistent storage** with SQLite for data reuse across runs
 - **Cost-optimized LLM usage**:
@@ -138,7 +137,6 @@ The SQLite database stores:
 - **insights**: Structured analysis results (JSON)
 - **reports**: Generated markdown reports
 - **news_cache**: Cached news with extracted data
-- **filings_cache**: Cached regulatory filings
 
 ## Configuration
 
@@ -150,9 +148,9 @@ Edit `config.py` to modify:
 
 Environment variables in `.env`:
 
-- `ANTHROPIC_API_KEY`: Your Anthropic API key
-- `DB_PATH`: Path to SQLite database (default: `./data/finance_agents.db`)
-- `REPORTS_DIR`: Directory for reports (default: `./data/reports`)
+- `ANTHROPIC_API_KEY`: Your Anthropic API key (required)
+- `DB_PATH`: Path to SQLite database (required)
+- `REPORTS_DIR`: Directory for reports (required)
 
 ## Cost Optimization
 

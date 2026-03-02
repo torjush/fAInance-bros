@@ -1,7 +1,14 @@
 """Configuration settings and prompts for the finance agents."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise ValueError(f"Required environment variable {name!r} is not set")
+    return value
 
 
 @dataclass
@@ -9,14 +16,14 @@ class Config:
     """Application configuration."""
 
     # API Keys
-    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    anthropic_api_key: str = field(default_factory=lambda: _require_env("ANTHROPIC_API_KEY"))
 
     # Model settings
     extraction_model: str = "claude-haiku-4-5-20251001"  # Cheaper for extraction
     analysis_model: str = "claude-sonnet-4-5-20250929"   # Better reasoning
 
     # Database
-    db_path: str = os.getenv("DB_PATH", "/data/finance_agents.db")
+    db_path: str = field(default_factory=lambda: _require_env("DB_PATH"))
 
     # Data fetching
     price_history_days: int = 365  # How far back to fetch prices initially
@@ -26,7 +33,7 @@ class Config:
     max_concurrent_requests: int = 5
 
     # Report output
-    reports_dir: str = os.getenv("REPORTS_DIR", "/data/reports")
+    reports_dir: str = field(default_factory=lambda: _require_env("REPORTS_DIR"))
 
 
 # Prompts - kept separate for easy modification
