@@ -36,6 +36,7 @@ class AnalyzerAgent:
         ticker: str,
         context: dict[str, Any],
         collected_data: dict[str, Any],
+        global_news: dict[str, Any] = None,
     ) -> dict[str, Any]:
         """
         Perform comprehensive analysis of the ticker.
@@ -44,6 +45,7 @@ class AnalyzerAgent:
             ticker: Stock ticker symbol
             context: Historical context from ContextAgent
             collected_data: Fresh data from CollectorAgent
+            global_news: Global macro news context from GlobalNewsAgent
 
         Returns:
             Dictionary containing analysis results
@@ -90,6 +92,9 @@ class AnalyzerAgent:
         previous_insights = context.get("previous_insights", {})
         previous_insights_text = self._format_previous_insights(previous_insights)
 
+        # Format global news context
+        global_context_text = self._format_global_context(global_news or {})
+
         # Build the analysis prompt
         prompt = PROMPTS["analyze_data"].format(
             ticker=ticker,
@@ -98,6 +103,7 @@ class AnalyzerAgent:
             price_data=recent_prices,
             price_stats=json.dumps(price_stats, indent=2),
             news_data=news_data,
+            global_context=global_context_text,
         )
 
         # Call Claude Sonnet for analysis
@@ -300,6 +306,31 @@ class AnalyzerAgent:
             content=analysis,
             summary=analysis.get("outlook", "Analysis completed"),
         )
+
+    def _format_global_context(self, global_news: dict) -> str:
+        """Format global news context for the analysis prompt."""
+        if not global_news:
+            return "No global news context available."
+
+        lines = []
+        summary = global_news.get("summary", "")
+        if summary:
+            lines.append(summary)
+
+        themes = global_news.get("key_themes", [])
+        if themes:
+            lines.append(f"Key themes: {', '.join(themes)}")
+
+        events = global_news.get("macro_events", [])
+        if events:
+            lines.append("Notable macro events:")
+            for event in events[:5]:
+                lines.append(f"  - {event}")
+
+        sentiment = global_news.get("market_sentiment", "neutral")
+        lines.append(f"Global market sentiment: {sentiment}")
+
+        return "\n".join(lines) if lines else "No global news context available."
 
     def _create_fallback_analysis(self, price_stats: dict) -> dict:
         """Create a basic fallback analysis if LLM fails."""

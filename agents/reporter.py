@@ -57,6 +57,7 @@ class ReporterAgent:
         risk_factors = json.dumps(analysis.get("risk_factors", []), indent=2)
         key_observations = "\n".join(f"- {obs}" for obs in analysis.get("key_observations", []))
         outlook = analysis.get("outlook", "No outlook available")
+        global_context = analysis.get("global_context_impact", "No global context available.")
 
         # Format recent prices
         recent_prices = self._format_price_table(analysis.get("recent_prices", []))
@@ -69,6 +70,7 @@ class ReporterAgent:
             analysis_date=analysis_date,
             price_analysis=price_analysis,
             sentiment_analysis=sentiment_analysis,
+            global_context=global_context,
             risk_factors=risk_factors,
             key_observations=key_observations,
             outlook=outlook,

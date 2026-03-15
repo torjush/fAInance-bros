@@ -94,6 +94,8 @@ class GoogleNewsRSS:
         query: str,
         max_results: int = 20,
         session: aiohttp.ClientSession = None,
+        hl: str = "no",
+        gl: str = "NO",
     ) -> list[dict]:
         """
         Fetch news from Google News RSS.
@@ -102,10 +104,13 @@ class GoogleNewsRSS:
             query: Search query (company name or ticker)
             max_results: Maximum number of results to return
             session: Optional aiohttp session for connection reuse
+            hl: Language code (e.g. "no", "en")
+            gl: Country code (e.g. "NO", "US")
         """
         # Build URL with query
         encoded_query = quote_plus(query)
-        url = f"{GoogleNewsRSS.BASE_URL}?q={encoded_query}&hl=no&gl=NO&ceid=NO:no"
+        ceid = f"{gl}:{hl}"
+        url = f"{GoogleNewsRSS.BASE_URL}?q={encoded_query}&hl={hl}&gl={gl}&ceid={ceid}"
 
         close_session = False
         if session is None:

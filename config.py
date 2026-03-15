@@ -56,6 +56,21 @@ Return a JSON object with:
 
 Only return valid JSON, no other text.""",
 
+    "extract_global_news": """You are a macro financial analyst. Based on the following global financial news headlines, extract the key market themes and overall sentiment.
+
+Headlines:
+{headlines}
+
+Return a JSON object:
+{{
+    "market_sentiment": "positive" | "negative" | "neutral",
+    "key_themes": ["list of key market themes, e.g. 'Fed rate pause', 'Oil supply cut', 'China slowdown'"],
+    "macro_events": ["list of significant macro events or decisions mentioned"],
+    "summary": "2-3 sentence overview of the current global market environment"
+}}
+
+Only return valid JSON, no other text.""",
+
     "analyze_data": """You are a financial analyst specializing in Oslo Stock Exchange companies.
 
 Analyze the following data for {ticker} ({company_name}):
@@ -72,15 +87,20 @@ Analyze the following data for {ticker} ({company_name}):
 ## Recent News
 {news_data}
 
+## Global Market Context
+{global_context}
+
 Provide a comprehensive analysis covering:
 
 1. **Price Action Analysis**: Analyze recent price movements, trends, support/resistance levels, and volume patterns.
 
 2. **News Sentiment**: Summarize the overall news sentiment and highlight the most significant news items.
 
-3. **Risk Factors**: Identify any emerging risks based on the data.
+3. **Global Context Impact**: Note any global macro events or trends (from the Global Market Context section) that are relevant to this company or sector. If none are directly relevant, state that.
 
-4. **Key Observations**: 3-5 bullet points of the most important takeaways.
+4. **Risk Factors**: Identify any emerging risks based on the data, including macro risks.
+
+5. **Key Observations**: 3-5 bullet points of the most important takeaways.
 
 Note: Support and resistance levels are calculated algorithmically and will be added separately. Focus your analysis on trend, volatility, and interpretation.
 
@@ -98,6 +118,7 @@ Return a JSON object with your analysis:
         "key_themes": ["list of themes"],
         "summary": "2-3 sentence summary"
     }},
+    "global_context_impact": "1-2 sentences on how global macro environment is relevant (or not) to this stock",
     "risk_factors": [
         {{"risk": "description", "severity": "high" | "medium" | "low"}}
     ],
@@ -125,6 +146,9 @@ Using the following analysis data, generate a professional markdown report.
 ## Sentiment Analysis
 {sentiment_analysis}
 
+## Global Market Context
+{global_context}
+
 ## Risk Factors
 {risk_factors}
 
@@ -140,8 +164,9 @@ Using the following analysis data, generate a professional markdown report.
 Generate a well-formatted markdown report that:
 1. Starts with a header and executive summary
 2. Includes all analysis sections with clear headings
-3. Presents price data in a readable table format
-4. Ends with a disclaimer about this being AI-generated analysis
+3. Includes a "Global Market Context" section that discusses how the current global macro environment (central banks, commodities, geopolitics) is relevant to this stock — only if relevant
+4. Presents price data in a readable table format
+5. Ends with a disclaimer about this being AI-generated analysis
 
 Make it professional, clear, and actionable. Use appropriate markdown formatting including headers, bullet points, tables, and emphasis where appropriate.
 

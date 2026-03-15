@@ -27,6 +27,7 @@ from config import get_config, Config
 from data.storage import Storage
 from agents.context import ContextAgent
 from agents.collector import CollectorAgent
+from agents.global_news import GlobalNewsAgent
 from agents.analyzer import AnalyzerAgent
 from agents.reporter import ReporterAgent
 from visualization import plot_price_chart
@@ -48,6 +49,7 @@ class AnalysisState(TypedDict):
     ticker: str
     context: dict[str, Any]
     collected_data: dict[str, Any]
+    global_news: dict[str, Any]
     analysis: dict[str, Any]
     chart_path: str | None
     report: str
@@ -65,6 +67,7 @@ class StockAnalyzerWorkflow:
         # Initialize agents
         self.context_agent = ContextAgent(self.storage)
         self.collector_agent = CollectorAgent(self.storage, config)
+        self.global_news_agent = GlobalNewsAgent(config)
         self.analyzer_agent = AnalyzerAgent(self.storage, config)
         self.reporter_agent = ReporterAgent(self.storage, config)
 
@@ -79,6 +82,7 @@ class StockAnalyzerWorkflow:
         # Add nodes for each agent
         workflow.add_node("gather_context", self._gather_context)
         workflow.add_node("collect_data", self._collect_data)
+        workflow.add_node("fetch_global_news", self._fetch_global_news)
         workflow.add_node("analyze", self._analyze)
         workflow.add_node("generate_chart", self._generate_chart)
         workflow.add_node("generate_report", self._generate_report)
@@ -86,7 +90,8 @@ class StockAnalyzerWorkflow:
         # Define edges (linear workflow)
         workflow.set_entry_point("gather_context")
         workflow.add_edge("gather_context", "collect_data")
-        workflow.add_edge("collect_data", "analyze")
+        workflow.add_edge("collect_data", "fetch_global_news")
+        workflow.add_edge("fetch_global_news", "analyze")
         workflow.add_edge("analyze", "generate_chart")
         workflow.add_edge("generate_chart", "generate_report")
         workflow.add_edge("generate_report", END)
@@ -135,6 +140,24 @@ class StockAnalyzerWorkflow:
                 "status": "collection_failed",
             }
 
+    def _fetch_global_news(self, state: AnalysisState) -> dict:
+        """Node: Fetch global financial news for macro context."""
+        logging.info("[Global News Agent] Fetching global news")
+
+        try:
+            global_news = asyncio.run(self.global_news_agent.fetch())
+            return {
+                "global_news": global_news,
+                "status": "global_news_fetched",
+            }
+        except Exception as e:
+            logging.error(f"Global news fetch failed: {e}")
+            return {
+                "global_news": {},
+                "error": str(e),
+                "status": "global_news_failed",
+            }
+
     def _analyze(self, state: AnalysisState) -> dict:
         """Node: Analyze collected data."""
         logging.info(f"[Analyzer Agent] Analyzing {state['ticker']}")
@@ -151,6 +174,7 @@ class StockAnalyzerWorkflow:
                 ticker=state["ticker"],
                 context=state["context"],
                 collected_data=state["collected_data"],
+                global_news=state.get("global_news", {}),
             )
             return {
                 "analysis": analysis,
@@ -241,6 +265,7 @@ class StockAnalyzerWorkflow:
             "ticker": ticker,
             "context": {},
             "collected_data": {},
+            "global_news": {},
             "analysis": {},
             "chart_path": None,
             "report": "",
