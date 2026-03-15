@@ -8,7 +8,9 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 - **Incremental analysis** - only fetches new data since last run
 - **Multiple data sources**:
   - Stock prices via yfinance
-  - News via Google News RSS
+  - Company-specific news via Google News RSS
+  - Sector/geography-targeted news based on company profile
+  - Global macro news (markets, central banks, commodities)
   - Macro data (key policy rate) from Norges Bank
 - **Persistent storage** with SQLite for data reuse across runs
 - **Cost-optimized LLM usage**:
@@ -32,6 +34,24 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 │ Context Agent   │────▶│ Data Collector  │
 │ (SQLite lookup) │     │ (yfinance, RSS) │
 └─────────────────┘     └────────┬────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │ Global News     │
+                        │ (macro context) │
+                        └────────┬────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │ Company Profile │
+                        │ (sectors, geos) │
+                        └────────┬────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │ Targeted News   │
+                        │ (sector × geo)  │
+                        └────────┬────────┘
                                  │
                                  ▼
                         ┌─────────────────┐
@@ -116,10 +136,13 @@ finance-agents/
 ├── visualization.py    # Price chart generation
 ├── utils.py            # Utility functions
 ├── agents/
-│   ├── context.py      # Historical context retrieval
-│   ├── collector.py    # Data collection from external sources
-│   ├── analyzer.py     # AI-powered analysis
-│   └── reporter.py     # Report generation (MD + PDF)
+│   ├── context.py          # Historical context retrieval
+│   ├── collector.py        # Data collection from external sources
+│   ├── global_news.py      # Global macro news (markets, rates, commodities)
+│   ├── company_profile.py  # Extract sectors/geographies from stock info
+│   ├── targeted_news.py    # Sector/geography-targeted news fetching
+│   ├── analyzer.py         # AI-powered analysis
+│   └── reporter.py         # Report generation (MD + PDF)
 ├── data/
 │   ├── sources.py      # API integrations (yfinance, RSS feeds)
 │   └── storage.py      # SQLite database operations

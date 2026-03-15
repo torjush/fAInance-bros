@@ -58,6 +58,7 @@ class ReporterAgent:
         key_observations = "\n".join(f"- {obs}" for obs in analysis.get("key_observations", []))
         outlook = analysis.get("outlook", "No outlook available")
         global_context = analysis.get("global_context_impact", "No global context available.")
+        targeted_context = analysis.get("targeted_news_context", "No sector/geography context available.")
 
         # Format recent prices
         recent_prices = self._format_price_table(analysis.get("recent_prices", []))
@@ -71,6 +72,7 @@ class ReporterAgent:
             price_analysis=price_analysis,
             sentiment_analysis=sentiment_analysis,
             global_context=global_context,
+            targeted_context=targeted_context,
             risk_factors=risk_factors,
             key_observations=key_observations,
             outlook=outlook,

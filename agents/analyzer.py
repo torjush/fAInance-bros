@@ -37,6 +37,7 @@ class AnalyzerAgent:
         context: dict[str, Any],
         collected_data: dict[str, Any],
         global_news: dict[str, Any] = None,
+        targeted_news: dict[str, Any] = None,
     ) -> dict[str, Any]:
         """
         Perform comprehensive analysis of the ticker.
@@ -95,6 +96,9 @@ class AnalyzerAgent:
         # Format global news context
         global_context_text = self._format_global_context(global_news or {})
 
+        # Format targeted (sector/geo) news context
+        targeted_context_text = self._format_targeted_news(targeted_news or {})
+
         # Build the analysis prompt
         prompt = PROMPTS["analyze_data"].format(
             ticker=ticker,
@@ -104,6 +108,7 @@ class AnalyzerAgent:
             price_stats=json.dumps(price_stats, indent=2),
             news_data=news_data,
             global_context=global_context_text,
+            targeted_context=targeted_context_text,
         )
 
         # Call Claude Sonnet for analysis
@@ -143,6 +148,7 @@ class AnalyzerAgent:
         analysis["analysis_timestamp"] = datetime.now(timezone.utc).isoformat()
         analysis["price_stats"] = price_stats
         analysis["recent_prices"] = prices[:60]
+        analysis["targeted_news_context"] = targeted_context_text
 
         logger.info(f"Analysis complete for {ticker}")
         return analysis
@@ -331,6 +337,26 @@ class AnalyzerAgent:
         lines.append(f"Global market sentiment: {sentiment}")
 
         return "\n".join(lines) if lines else "No global news context available."
+
+    def _format_targeted_news(self, targeted_news: dict) -> str:
+        """Format targeted sector/geography news context for the analysis prompt."""
+        if not targeted_news:
+            return "No targeted sector/geography news available."
+
+        lines = []
+        summary = targeted_news.get("summary", "")
+        if summary:
+            lines.append(summary)
+
+        sector_themes = targeted_news.get("sector_themes", [])
+        if sector_themes:
+            lines.append(f"Sector themes: {', '.join(sector_themes)}")
+
+        geo_themes = targeted_news.get("geo_themes", [])
+        if geo_themes:
+            lines.append(f"Geographic themes: {', '.join(geo_themes)}")
+
+        return "\n".join(lines) if lines else "No targeted sector/geography news available."
 
     def _create_fallback_analysis(self, price_stats: dict) -> dict:
         """Create a basic fallback analysis if LLM fails."""

@@ -48,6 +48,13 @@ class ContextAgent:
             "full_analysis": self.storage.get_insights(ticker, "full_analysis", limit=2),
         }
 
+        # Load stored company profile and targeted news themes for reuse on incremental runs
+        company_profile_rows = self.storage.get_insights(ticker, "company_profile", limit=1)
+        company_profile = company_profile_rows[0]["content"] if company_profile_rows else None
+
+        targeted_news_rows = self.storage.get_insights(ticker, "targeted_news", limit=1)
+        targeted_news_themes = targeted_news_rows[0]["content"] if targeted_news_rows else None
+
         # Get price history (last 90 days for trend analysis)
         ninety_days_ago = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
         price_history = self.storage.get_prices(ticker, start_date=ninety_days_ago)
@@ -67,6 +74,8 @@ class ContextAgent:
             "cached_news": cached_news,
             "latest_report": latest_report,
             "is_new_ticker": company is None,
+            "company_profile": company_profile,
+            "targeted_news_themes": targeted_news_themes,
         }
 
         # Calculate some summary stats for the context

@@ -90,6 +90,9 @@ Analyze the following data for {ticker} ({company_name}):
 ## Global Market Context
 {global_context}
 
+## Sector & Geographic Context
+{targeted_context}
+
 Provide a comprehensive analysis covering:
 
 1. **Price Action Analysis**: Analyze recent price movements, trends, support/resistance levels, and volume patterns.
@@ -98,9 +101,11 @@ Provide a comprehensive analysis covering:
 
 3. **Global Context Impact**: Note any global macro events or trends (from the Global Market Context section) that are relevant to this company or sector. If none are directly relevant, state that.
 
-4. **Risk Factors**: Identify any emerging risks based on the data, including macro risks.
+4. **Sector & Geographic Context**: Highlight any sector-specific or geography-specific developments (from the Sector & Geographic Context section) relevant to this company's operations.
 
-5. **Key Observations**: 3-5 bullet points of the most important takeaways.
+5. **Risk Factors**: Identify any emerging risks based on the data, including macro risks.
+
+6. **Key Observations**: 3-5 bullet points of the most important takeaways.
 
 Note: Support and resistance levels are calculated algorithmically and will be added separately. Focus your analysis on trend, volatility, and interpretation.
 
@@ -128,6 +133,38 @@ Return a JSON object with your analysis:
 
 Only return valid JSON, no other text.""",
 
+    "extract_company_profile": """You are a financial analyst. Given the following company information, extract the key sectors/industries and geographies where the company operates, then generate targeted news search queries.
+
+Company: {company_name}
+Sector: {sector}
+Industry: {industry}
+Country: {country}
+Business Summary: {business_summary}
+
+Return a JSON object:
+{{
+    "sectors": ["list of up to 3 key sectors/industries, e.g. 'oil & gas', 'renewable energy', 'offshore drilling'"],
+    "geographies": ["list of up to 5 key regions/countries where company operates, e.g. 'Norway', 'North Sea', 'United States', 'Brazil'"],
+    "search_queries": ["list of up to 6 targeted news search queries combining sectors and geographies, e.g. 'oil gas North Sea', 'offshore drilling Norway', 'energy sector Brazil']"
+}}
+
+Be specific and practical. Queries should be 2-4 words optimized for Google News search.
+Only return valid JSON, no other text.""",
+
+    "extract_targeted_news": """You are a financial analyst. Based on the following news headlines fetched for targeted sector/geography queries, extract key themes and insights.
+
+Headlines (grouped by query):
+{headlines}
+
+Return a JSON object:
+{{
+    "sector_themes": ["list of key themes related to the company's sectors, e.g. 'OPEC production cuts', 'offshore rig demand up'"],
+    "geo_themes": ["list of key themes related to the company's geographies, e.g. 'Norway energy tax increase', 'Brazil oil licensing round'"],
+    "summary": "2-3 sentence summary of the most important sector and geographic developments"
+}}
+
+Only return valid JSON, no other text.""",
+
     "generate_report": """You are a financial report writer creating an analysis report for {ticker} ({company_name}).
 
 Using the following analysis data, generate a professional markdown report.
@@ -149,6 +186,9 @@ Using the following analysis data, generate a professional markdown report.
 ## Global Market Context
 {global_context}
 
+## Sector & Geographic Context
+{targeted_context}
+
 ## Risk Factors
 {risk_factors}
 
@@ -165,8 +205,9 @@ Generate a well-formatted markdown report that:
 1. Starts with a header and executive summary
 2. Includes all analysis sections with clear headings
 3. Includes a "Global Market Context" section that discusses how the current global macro environment (central banks, commodities, geopolitics) is relevant to this stock — only if relevant
-4. Presents price data in a readable table format
-5. Ends with a disclaimer about this being AI-generated analysis
+4. Includes a "Sector & Geographic Context" section highlighting sector-specific and geography-specific developments relevant to this company — only if relevant
+5. Presents price data in a readable table format
+6. Ends with a disclaimer about this being AI-generated analysis
 
 Make it professional, clear, and actionable. Use appropriate markdown formatting including headers, bullet points, tables, and emphasis where appropriate.
 

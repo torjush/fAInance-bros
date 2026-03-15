@@ -27,6 +27,8 @@ class YFinanceSource:
                 "name": info.get("longName") or info.get("shortName", ticker),
                 "sector": info.get("sector", "Unknown"),
                 "industry": info.get("industry", "Unknown"),
+                "country": info.get("country", "Unknown"),
+                "longBusinessSummary": info.get("longBusinessSummary", ""),
                 "currency": info.get("currency", "NOK"),
                 "exchange": info.get("exchange", "OSL"),
             }

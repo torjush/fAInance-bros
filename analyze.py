@@ -28,6 +28,8 @@ from data.storage import Storage
 from agents.context import ContextAgent
 from agents.collector import CollectorAgent
 from agents.global_news import GlobalNewsAgent
+from agents.company_profile import CompanyProfileAgent
+from agents.targeted_news import TargetedNewsAgent
 from agents.analyzer import AnalyzerAgent
 from agents.reporter import ReporterAgent
 from visualization import plot_price_chart
@@ -50,6 +52,8 @@ class AnalysisState(TypedDict):
     context: dict[str, Any]
     collected_data: dict[str, Any]
     global_news: dict[str, Any]
+    company_profile: dict[str, Any]
+    targeted_news: dict[str, Any]
     analysis: dict[str, Any]
     chart_path: str | None
     report: str
@@ -68,6 +72,8 @@ class StockAnalyzerWorkflow:
         self.context_agent = ContextAgent(self.storage)
         self.collector_agent = CollectorAgent(self.storage, config)
         self.global_news_agent = GlobalNewsAgent(config)
+        self.company_profile_agent = CompanyProfileAgent(self.storage, config)
+        self.targeted_news_agent = TargetedNewsAgent(self.storage, config)
         self.analyzer_agent = AnalyzerAgent(self.storage, config)
         self.reporter_agent = ReporterAgent(self.storage, config)
 
@@ -83,6 +89,8 @@ class StockAnalyzerWorkflow:
         workflow.add_node("gather_context", self._gather_context)
         workflow.add_node("collect_data", self._collect_data)
         workflow.add_node("fetch_global_news", self._fetch_global_news)
+        workflow.add_node("profile_company", self._profile_company)
+        workflow.add_node("fetch_targeted_news", self._fetch_targeted_news)
         workflow.add_node("analyze", self._analyze)
         workflow.add_node("generate_chart", self._generate_chart)
         workflow.add_node("generate_report", self._generate_report)
@@ -91,7 +99,9 @@ class StockAnalyzerWorkflow:
         workflow.set_entry_point("gather_context")
         workflow.add_edge("gather_context", "collect_data")
         workflow.add_edge("collect_data", "fetch_global_news")
-        workflow.add_edge("fetch_global_news", "analyze")
+        workflow.add_edge("fetch_global_news", "profile_company")
+        workflow.add_edge("profile_company", "fetch_targeted_news")
+        workflow.add_edge("fetch_targeted_news", "analyze")
         workflow.add_edge("analyze", "generate_chart")
         workflow.add_edge("generate_chart", "generate_report")
         workflow.add_edge("generate_report", END)
@@ -158,6 +168,52 @@ class StockAnalyzerWorkflow:
                 "status": "global_news_failed",
             }
 
+    def _profile_company(self, state: AnalysisState) -> dict:
+        """Node: Build company profile (sectors, geographies, search queries)."""
+        logging.info(f"[Company Profile Agent] Profiling {state['ticker']}")
+
+        try:
+            stock_info = state.get("collected_data", {}).get("stock_info", {})
+            company_profile = self.company_profile_agent.profile(
+                ticker=state["ticker"],
+                stock_info=stock_info,
+                context=state["context"],
+            )
+            return {
+                "company_profile": company_profile,
+                "status": "company_profiled",
+            }
+        except Exception as e:
+            logging.error(f"Company profiling failed: {e}")
+            return {
+                "company_profile": {},
+                "error": str(e),
+                "status": "profile_failed",
+            }
+
+    def _fetch_targeted_news(self, state: AnalysisState) -> dict:
+        """Node: Fetch sector/geography-targeted news."""
+        logging.info(f"[Targeted News Agent] Fetching targeted news for {state['ticker']}")
+
+        try:
+            targeted_news = asyncio.run(
+                self.targeted_news_agent.fetch(
+                    ticker=state["ticker"],
+                    company_profile=state.get("company_profile", {}),
+                )
+            )
+            return {
+                "targeted_news": targeted_news,
+                "status": "targeted_news_fetched",
+            }
+        except Exception as e:
+            logging.error(f"Targeted news fetch failed: {e}")
+            return {
+                "targeted_news": {},
+                "error": str(e),
+                "status": "targeted_news_failed",
+            }
+
     def _analyze(self, state: AnalysisState) -> dict:
         """Node: Analyze collected data."""
         logging.info(f"[Analyzer Agent] Analyzing {state['ticker']}")
@@ -175,6 +231,7 @@ class StockAnalyzerWorkflow:
                 context=state["context"],
                 collected_data=state["collected_data"],
                 global_news=state.get("global_news", {}),
+                targeted_news=state.get("targeted_news", {}),
             )
             return {
                 "analysis": analysis,
@@ -266,6 +323,8 @@ class StockAnalyzerWorkflow:
             "context": {},
             "collected_data": {},
             "global_news": {},
+            "company_profile": {},
+            "targeted_news": {},
             "analysis": {},
             "chart_path": None,
             "report": "",
