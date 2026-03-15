@@ -1,4 +1,4 @@
-# Finance Agents
+# fAInance-bros
 
 AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (Oslo Børs). Uses LangGraph to orchestrate multiple AI agents that collect data, analyze trends, and generate comprehensive reports with charts.
 
@@ -124,13 +124,13 @@ Reports are saved to `./data/reports/` as both `.md` and `.pdf` files.
 Add to crontab for automated daily analysis:
 ```bash
 # Run every weekday at 18:00 (after market close)
-0 18 * * 1-5 cd /path/to/finance-agents && uv run python analyze.py EQNR.OL
+0 18 * * 1-5 cd /path/to/fAInance-bros && uv run python analyze.py EQNR.OL
 ```
 
 ## Project Structure
 
 ```
-finance-agents/
+fAInance-bros/
 ├── analyze.py          # CLI entry point and LangGraph workflow
 ├── config.py           # Configuration and prompts
 ├── visualization.py    # Price chart generation

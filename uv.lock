@@ -480,7 +480,7 @@ wheels = [
 ]
 
 [[package]]
-name = "finance-agents"
+name = "fainance-bros"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
