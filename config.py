@@ -71,7 +71,7 @@ Return a JSON object:
 
 Only return valid JSON, no other text.""",
 
-    "analyze_data": """You are a financial analyst specializing in Oslo Stock Exchange companies.
+    "analyze_data": """You are a fundamental financial analyst specializing in Oslo Stock Exchange companies. Your investment horizon is approximately one month.
 
 Analyze the following data for {ticker} ({company_name}):
 
@@ -93,21 +93,21 @@ Analyze the following data for {ticker} ({company_name}):
 ## Sector & Geographic Context
 {targeted_context}
 
-Provide a comprehensive analysis covering:
+Provide an analysis covering the following, in order of importance:
 
-1. **Price Action Analysis**: Analyze recent price movements, trends, support/resistance levels, and volume patterns.
+1. **News & Catalysts**: What are the most significant recent news items and upcoming catalysts over the next month? Focus on company-specific events (earnings, contracts, management changes, regulatory decisions) and sector tailwinds/headwinds.
 
-2. **News Sentiment**: Summarize the overall news sentiment and highlight the most significant news items.
+2. **Fundamental Outlook (1-month horizon)**: Based on news and macro context, what is the likely direction for this stock over the next ~4 weeks? Consider: sentiment momentum, sector trends, macro environment.
 
-3. **Global Context Impact**: Note any global macro events or trends (from the Global Market Context section) that are relevant to this company or sector. If none are directly relevant, state that.
+3. **Global & Sector Context**: How does the current macro and sector environment affect the 1-month outlook for this company?
 
-4. **Sector & Geographic Context**: Highlight any sector-specific or geography-specific developments (from the Sector & Geographic Context section) relevant to this company's operations.
+4. **Risk Factors**: What could derail the 1-month thesis?
 
-5. **Risk Factors**: Identify any emerging risks based on the data, including macro risks.
+5. **Price Context** (secondary): Use price data only as supporting context — note if the stock is up/down significantly recently, but do not base the outlook on technical patterns or support/resistance levels.
 
-6. **Key Observations**: 3-5 bullet points of the most important takeaways.
+6. **Key Observations**: 3-5 bullet points of the most important takeaways, focused on the 1-month outlook.
 
-Note: Support and resistance levels are calculated algorithmically and will be added separately. Focus your analysis on trend, volatility, and interpretation.
+Note: Technical indicators (support/resistance, moving averages) are computed separately and are low-weight inputs. Ground your analysis primarily in news, fundamentals, and macro context.
 
 Return a JSON object with your analysis:
 {{
@@ -115,20 +115,20 @@ Return a JSON object with your analysis:
         "trend": "bullish" | "bearish" | "neutral",
         "trend_strength": "strong" | "moderate" | "weak",
         "volatility": "high" | "medium" | "low",
-        "summary": "2-3 sentence summary"
+        "summary": "1-2 sentence summary of recent price action as context only"
     }},
     "sentiment_analysis": {{
         "overall_sentiment": "positive" | "negative" | "neutral",
         "confidence": 0.0-1.0,
         "key_themes": ["list of themes"],
-        "summary": "2-3 sentence summary"
+        "summary": "2-3 sentence summary focused on news-driven sentiment"
     }},
-    "global_context_impact": "1-2 sentences on how global macro environment is relevant (or not) to this stock",
+    "global_context_impact": "1-2 sentences on how the global macro environment affects the 1-month outlook for this stock",
     "risk_factors": [
         {{"risk": "description", "severity": "high" | "medium" | "low"}}
     ],
     "key_observations": ["bullet point 1", "bullet point 2", ...],
-    "outlook": "brief 1-2 sentence forward-looking statement"
+    "outlook": "1-2 sentence forward-looking statement for the next ~1 month, based primarily on news and macro — not technicals"
 }}
 
 Only return valid JSON, no other text.""",
@@ -257,14 +257,16 @@ Using the following analysis data, generate a professional markdown report.
 {recent_prices}
 
 Generate a well-formatted markdown report that:
-1. Starts with a header and executive summary
-2. Includes all analysis sections with clear headings
-3. Includes a "Global Market Context" section that discusses how the current global macro environment (central banks, commodities, geopolitics) is relevant to this stock — only if relevant
-4. Includes a "Sector & Geographic Context" section highlighting sector-specific and geography-specific developments relevant to this company — only if relevant
-5. Presents price data in a readable table format
-6. Ends with a disclaimer about this being AI-generated analysis
+1. Starts with a header and executive summary focused on the 1-month outlook
+2. Leads with news, catalysts, and macro context — these are the primary drivers
+3. Includes a "Global Market Context" section on macro relevance to this stock — only if relevant
+4. Includes a "Sector & Geographic Context" section on sector/geo developments — only if relevant
+5. Includes a brief "Price Context" section — mention recent price moves as supporting context only, not as the basis for the outlook. Do not dwell on technical patterns or support/resistance levels
+6. Presents recent price data in a readable table
+7. Ends with a clear Buy / Hold / Sell recommendation for a ~1 month horizon, with a one-sentence rationale
+8. Ends with a disclaimer about this being AI-generated analysis
 
-Make it professional, clear, and actionable. Use appropriate markdown formatting including headers, bullet points, tables, and emphasis where appropriate.
+Make it professional, direct, and actionable. No hedging language.
 
 Return ONLY the markdown content, no code blocks or backticks around it.""",
 }
