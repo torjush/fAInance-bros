@@ -63,3 +63,6 @@ data/
 *.sublime-workspace
 
 data/reports/
+
+# Portfolio config
+portfolio.txt

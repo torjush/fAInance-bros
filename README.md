@@ -5,6 +5,7 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 ## Features
 
 - **Multi-agent architecture** using LangGraph for orchestrated analysis
+- **Portfolio analysis** - analyze all holdings at once with a single unified report (Market Overview, per-stock BHS, summary table)
 - **Incremental analysis** - only fetches new data since last run
 - **Multiple data sources**:
   - Stock prices via yfinance
@@ -20,6 +21,8 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 - **PDF reports** alongside markdown
 
 ## Architecture
+
+### Single-Stock Mode
 
 ```
 ┌─────────────────┐
@@ -72,6 +75,39 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
                         └─────────────────┘
 ```
 
+### Portfolio Mode
+
+```
+┌──────────────────────┐
+│  CLI Entry           │
+│  (analyze.py -p)     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Portfolio Analyzer   │
+│ (portfolio_analyzer) │
+└──────┬───────────────┘
+       │
+       ├─ Fetch Global News (once, shared)
+       │
+       ├─ ThreadPoolExecutor ──────────────────────────────┐
+       │   ├─ StockAnalyzerWorkflow(EQNR.OL, no report)   │
+       │   ├─ StockAnalyzerWorkflow(DNB.OL, no report)     │
+       │   └─ StockAnalyzerWorkflow(MOWI.OL, no report)    │
+       │                                                   │
+       └─────────────────────────────────── collect ◀──────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Portfolio Reporter   │
+│ (Claude Sonnet)      │
+│ - Market Overview    │
+│ - Per-stock BHS      │
+│ - Summary table      │
+└──────────────────────┘
+```
+
 ## Quick Start
 
 ### Prerequisites
@@ -102,7 +138,7 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 
 ### Usage
 
-Analyze a stock:
+Analyze a single stock:
 ```bash
 # Analyze Equinor
 uv run python analyze.py EQNR.OL
@@ -117,32 +153,55 @@ uv run python analyze.py TEL.OL --verbose
 uv run python analyze.py EQNR.OL --output my_report.md
 ```
 
-Reports are saved to `./data/reports/` as both `.md` and `.pdf` files.
+Analyze a whole portfolio:
+```bash
+# Create a portfolio file (one ticker per line, # for comments)
+cat > portfolio.txt << EOF
+# My Oslo Børs portfolio
+EQNR.OL
+DNB
+MOWI.OL
+EOF
+
+# Run portfolio analysis
+uv run python analyze.py --portfolio portfolio.txt --verbose
+
+# Short flag
+uv run python analyze.py -p portfolio.txt
+```
+
+Reports are saved to `./data/reports/` as both `.md` and `.pdf` files. Portfolio reports are named `portfolio_YYYYMMDD_HHMMSS.md`.
 
 ### Scheduling with Cron
 
 Add to crontab for automated daily analysis:
 ```bash
-# Run every weekday at 18:00 (after market close)
+# Analyze single stock every weekday at 18:00 (after market close)
 0 18 * * 1-5 cd /path/to/fAInance-bros && uv run python analyze.py EQNR.OL
+
+# Analyze full portfolio every weekday at 18:00
+0 18 * * 1-5 cd /path/to/fAInance-bros && uv run python analyze.py --portfolio portfolio.txt
 ```
 
 ## Project Structure
 
 ```
 fAInance-bros/
-├── analyze.py          # CLI entry point and LangGraph workflow
-├── config.py           # Configuration and prompts
-├── visualization.py    # Price chart generation
-├── utils.py            # Utility functions
+├── analyze.py              # CLI entry point and LangGraph workflow (single-stock)
+├── portfolio_analyzer.py   # Portfolio orchestrator (parallel per-stock + unified report)
+├── config.py               # Configuration and prompts
+├── visualization.py        # Price chart generation
+├── utils.py                # Utility functions
+├── portfolio.txt           # Your portfolio (not committed — add tickers here)
 ├── agents/
-│   ├── context.py          # Historical context retrieval
-│   ├── collector.py        # Data collection from external sources
-│   ├── global_news.py      # Global macro news (markets, rates, commodities)
-│   ├── company_profile.py  # Extract sectors/geographies from stock info
-│   ├── targeted_news.py    # Sector/geography-targeted news fetching
-│   ├── analyzer.py         # AI-powered analysis
-│   └── reporter.py         # Report generation (MD + PDF)
+│   ├── context.py              # Historical context retrieval
+│   ├── collector.py            # Data collection from external sources
+│   ├── global_news.py          # Global macro news (markets, rates, commodities)
+│   ├── company_profile.py      # Extract sectors/geographies from stock info
+│   ├── targeted_news.py        # Sector/geography-targeted news fetching
+│   ├── analyzer.py             # AI-powered analysis
+│   ├── reporter.py             # Single-stock report generation (MD + PDF)
+│   └── portfolio_reporter.py   # Portfolio report generation (MD + PDF)
 ├── data/
 │   ├── sources.py      # API integrations (yfinance, RSS feeds)
 │   └── storage.py      # SQLite database operations

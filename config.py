@@ -165,7 +165,62 @@ Return a JSON object:
 
 Only return valid JSON, no other text.""",
 
-    "generate_report": """You are a financial report writer creating an analysis report for {ticker} ({company_name}).
+    "generate_portfolio_report": """You are a fundamental financial analyst writing a consolidated portfolio analysis report. The investment horizon for all recommendations is approximately one month.
+
+Today's date: {date}
+
+## Global Market Context
+{global_context}
+
+## Portfolio Holdings
+{stock_data}
+
+Generate a professional markdown portfolio report with EXACTLY this structure:
+
+# Portfolio Analysis — {date}
+
+## 1. Market Overview
+- Current global macro environment and what it means for Oslo Børs stocks over the next month
+- Which sectors dominate this portfolio and their 1-month macro sensitivity
+- Portfolio positioning relative to the current macro backdrop
+
+## 2. Individual Stock Analysis
+
+For EACH stock in the portfolio, write a subsection:
+
+### {ticker_placeholder} — {company_placeholder}
+**Sector:** {sector_placeholder}
+**Current Price:** {price_placeholder}
+
+[2-3 paragraphs of analysis covering: key news and upcoming catalysts over the next month, sector/macro tailwinds or headwinds, and what this means for the 1-month outlook. Mention recent price moves only as brief supporting context — do not anchor the analysis on technical patterns]
+
+**Recommendation: Buy / Hold / Sell** *(1-month horizon)*
+
+**Key Risks:** [2-3 bullet points]
+
+## 3. Portfolio Summary
+
+| Ticker | Company | Sector | Current Price | 1-Month Outlook | Recommendation | Rationale |
+|--------|---------|--------|---------------|-----------------|----------------|-----------|
+[one row per stock]
+
+## Disclaimer
+
+*This report is AI-generated for informational purposes only. It is not financial advice. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.*
+
+---
+
+Rules:
+- Investment horizon is ~1 month. Base recommendations on news, catalysts, and macro context — not on technical chart patterns or support/resistance levels
+- Be direct and decisive — no hedging phrases like "may", "could potentially", "it remains to be seen"
+- Base all recommendations strictly on the data provided — no external assumptions
+- If multiple stocks are in the same sector, explicitly note concentration risk in the Market Overview
+- 1-Month Outlook values in the table must be one of: Bullish / Bearish / Neutral
+- Recommendation must be one of: Buy / Hold / Sell
+
+Return ONLY the markdown content, no code blocks or backticks around it.""",
+
+    "generate_report": """You are a fundamental financial analyst writing a report for {ticker} ({company_name}). The investment horizon is approximately one month.
 
 Using the following analysis data, generate a professional markdown report.
 
