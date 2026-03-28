@@ -33,6 +33,7 @@ class PortfolioReporter:
         self,
         states: list[dict[str, Any]],
         global_news: dict[str, Any],
+        macro_advice: dict[str, Any] | None = None,
     ) -> tuple[Path, Path]:
         """
         Generate the portfolio report.
@@ -40,6 +41,7 @@ class PortfolioReporter:
         Args:
             states: List of completed AnalysisState dicts from per-stock workflows
             global_news: Pre-fetched global news dict
+            macro_advice: Optional output from MacroAdvisorAgent with stock_ideas list
 
         Returns:
             Tuple of (md_path, pdf_path)
@@ -47,11 +49,13 @@ class PortfolioReporter:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         stock_data = self._format_stock_data(states)
         global_context = self._format_global_context(global_news)
+        macro_advice_text = self._format_macro_advice(macro_advice)
 
         prompt = PROMPTS["generate_portfolio_report"].format(
             date=date_str,
             global_context=global_context,
             stock_data=stock_data,
+            macro_advice=macro_advice_text,
             # Placeholder tokens in the prompt template — replaced by Claude in output
             ticker_placeholder="TICKER",
             company_placeholder="Company Name",
@@ -91,7 +95,34 @@ class PortfolioReporter:
             lines.append("**Key Themes:** " + ", ".join(themes))
         if events := global_news.get("macro_events"):
             lines.append("**Macro Events:** " + ", ".join(events))
+        if safer := global_news.get("safer_sectors"):
+            lines.append("**Favoured Sectors:** " + ", ".join(safer))
+        if avoid := global_news.get("avoid_sectors"):
+            lines.append("**Sectors to Avoid:** " + ", ".join(avoid))
         return "\n".join(lines) if lines else "No global macro context available."
+
+    def _format_macro_advice(self, macro_advice: dict[str, Any] | None) -> str:
+        """Format MacroAdvisorAgent output for injection into the report prompt."""
+        if not macro_advice:
+            return "No macro stock ideas available."
+
+        ideas = macro_advice.get("stock_ideas", [])
+        if not ideas:
+            return "No macro stock ideas available."
+
+        lines = []
+        for idea in ideas:
+            ticker = idea.get("ticker", "?")
+            company = idea.get("company", "")
+            sector = idea.get("sector", "")
+            rationale = idea.get("rationale", "")
+            risk_note = idea.get("risk_note", "")
+            lines.append(
+                f"- **{ticker}** ({company}) | Sector: {sector}\n"
+                f"  Rationale: {rationale}\n"
+                f"  Risk: {risk_note}"
+            )
+        return "\n".join(lines)
 
     def _format_stock_data(self, states: list[dict[str, Any]]) -> str:
         """Format per-stock analysis data into prompt blocks."""
