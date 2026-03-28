@@ -73,6 +73,46 @@ Return a JSON object:
 
 Only return valid JSON, no other text.""",
 
+    "recommend_macro_stocks": """You are a senior equity analyst specialising in Oslo Børs (Oslo Stock Exchange). Based on the current macro environment described below, recommend 3 to 5 specific Oslo Børs stocks that are well-positioned over the next 1-3 months.
+
+## Current Macro Environment
+Market Sentiment: {market_sentiment}
+Summary: {macro_summary}
+Key Themes: {key_themes}
+Notable Macro Events: {macro_events}
+
+## Sector Guidance
+Sectors currently favoured by the macro backdrop: {safer_sectors}
+Sectors to avoid or underweight: {avoid_sectors}
+
+## Portfolio Exclusion
+The following tickers are already in the investor's portfolio and must NOT be recommended:
+{portfolio_tickers}
+
+## Your Task
+Recommend 3-5 Oslo Børs stocks that:
+1. Operate primarily in one of the favoured sectors above
+2. Are NOT listed in the portfolio exclusion list above
+3. Have a credible near-term catalyst or macro tailwind
+
+Use only your training knowledge of Oslo Børs companies — do not invent tickers.
+All tickers must be real Oslo Børs tickers ending in .OL (e.g. EQNR.OL, DNB.OL, MOWI.OL).
+
+Return a JSON object:
+{{
+    "stock_ideas": [
+        {{
+            "ticker": "XXXX.OL",
+            "company": "Full Company Name",
+            "sector": "Sector name",
+            "rationale": "1-2 sentences on why this stock fits the macro outlook",
+            "risk_note": "1 sentence on the main risk to this idea"
+        }}
+    ]
+}}
+
+Only return valid JSON, no other text.""",
+
     "analyze_data": """You are a fundamental financial analyst specializing in Oslo Stock Exchange companies. Your investment horizon is approximately one month.
 
 Analyze the following data for {ticker} ({company_name}):
