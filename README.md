@@ -5,13 +5,13 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 ## Features
 
 - **Multi-agent architecture** using LangGraph for orchestrated analysis
-- **Portfolio analysis** - analyze all holdings at once with a single unified report (Market Overview, per-stock BHS, summary table)
+- **Portfolio analysis** - analyze all holdings at once with a single unified report (Market Overview, per-stock BHS, summary table, macro sector outlook & new stock ideas)
 - **Incremental analysis** - only fetches new data since last run
 - **Multiple data sources**:
   - Stock prices via yfinance
   - Company-specific news via Google News RSS
   - Sector/geography-targeted news based on company profile
-  - Global macro news (markets, central banks, commodities)
+  - Global macro news (markets, central banks, commodities) with sector risk assessment
   - Macro data (key policy rate) from Norges Bank
 - **Persistent storage** with SQLite for data reuse across runs
 - **Cost-optimized LLM usage**:
@@ -90,6 +90,9 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 └──────┬───────────────┘
        │
        ├─ Fetch Global News (once, shared)
+       │      └─ includes safer_sectors / avoid_sectors
+       │
+       ├─ MacroAdvisorAgent ── sector risk + stock ideas
        │
        ├─ ThreadPoolExecutor ──────────────────────────────┐
        │   ├─ StockAnalyzerWorkflow(EQNR.OL, no report)   │
@@ -105,6 +108,8 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
 │ - Market Overview    │
 │ - Per-stock BHS      │
 │ - Summary table      │
+│ - Sector outlook     │
+│ - New stock ideas    │
 └──────────────────────┘
 ```
 
@@ -196,7 +201,8 @@ fAInance-bros/
 ├── agents/
 │   ├── context.py              # Historical context retrieval
 │   ├── collector.py            # Data collection from external sources
-│   ├── global_news.py          # Global macro news (markets, rates, commodities)
+│   ├── global_news.py          # Global macro news (markets, rates, commodities) + sector risk
+│   ├── macro_advisor.py        # Macro-driven Oslo Børs stock ideas (portfolio mode only)
 │   ├── company_profile.py      # Extract sectors/geographies from stock info
 │   ├── targeted_news.py        # Sector/geography-targeted news fetching
 │   ├── analyzer.py             # AI-powered analysis

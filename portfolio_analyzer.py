@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from config import Config
 from agents.global_news import GlobalNewsAgent
+from agents.macro_advisor import MacroAdvisorAgent
 from agents.portfolio_reporter import PortfolioReporter
 from analyze import StockAnalyzerWorkflow, AnalysisState
 
@@ -40,17 +41,31 @@ class PortfolioAnalyzer:
         # Step 1: Fetch global news once
         global_news = self._fetch_global_news()
 
-        # Step 2: Run per-stock analysis in parallel
+        # Step 2: Run macro advisor for sector risk + stock ideas
+        macro_advice = self._run_macro_advisor(global_news, tickers)
+
+        # Step 3: Run per-stock analysis in parallel
         states = self._analyze_all(tickers, global_news)
 
         if not states:
             raise RuntimeError("All stock analyses failed — cannot generate portfolio report")
 
-        # Step 3: Generate unified portfolio report
+        # Step 4: Generate unified portfolio report
         reporter = PortfolioReporter(self.config)
-        md_path, _ = reporter.generate_report(states, global_news)
+        md_path, _ = reporter.generate_report(states, global_news, macro_advice)
 
         return str(md_path)
+
+    def _run_macro_advisor(self, global_news: dict, tickers: list[str]) -> dict:
+        """Run MacroAdvisorAgent to generate sector risk + stock ideas."""
+        logger.info("Running MacroAdvisorAgent for sector/stock ideas")
+        try:
+            return MacroAdvisorAgent(self.config).recommend(
+                global_news=global_news, portfolio_tickers=tickers
+            )
+        except Exception as e:
+            logger.warning(f"MacroAdvisorAgent failed: {e} — continuing without ideas")
+            return {"stock_ideas": []}
 
     def _fetch_global_news(self) -> dict:
         """Fetch global macro news synchronously."""
