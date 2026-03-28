@@ -217,6 +217,9 @@ Today's date: {date}
 ## Portfolio Holdings
 {stock_data}
 
+## Macro Sector Outlook & Stock Ideas
+{macro_advice}
+
 Generate a professional markdown portfolio report with EXACTLY this structure:
 
 # Portfolio Analysis — {date}
@@ -246,6 +249,20 @@ For EACH stock in the portfolio, write a subsection:
 |--------|---------|--------|---------------|-----------------|----------------|-----------|
 [one row per stock]
 
+## 4. Macro Sector Outlook & New Ideas
+
+### Sector Risk Summary
+[Based on the global macro context and the favoured/avoid sectors listed above, summarise in 3-5 sentences which Oslo Børs sectors are best positioned and which face headwinds over the next month.]
+
+### Stock Ideas to Consider
+[Present the stock ideas from the Macro Sector Outlook data above. If no ideas were provided, write a brief note and explain the sector outlook in prose instead.]
+
+| Ticker | Company | Sector | Rationale |
+|--------|---------|--------|-----------|
+[one row per suggested stock]
+
+> **Disclaimer:** These stock ideas are AI-generated based on model training knowledge of Oslo Børs combined with the current macro news context. They have not been verified against live market data. This is not financial advice.
+
 ## Disclaimer
 
 *This report is AI-generated for informational purposes only. It is not financial advice. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.*
@@ -259,6 +276,7 @@ Rules:
 - If multiple stocks are in the same sector, explicitly note concentration risk in the Market Overview
 - 1-Month Outlook values in the table must be one of: Bullish / Bearish / Neutral
 - Recommendation must be one of: Buy / Hold / Sell
+- In Section 4, present only the ideas from the Macro Sector Outlook data — do not invent additional tickers
 
 Return ONLY the markdown content, no code blocks or backticks around it.""",
 
