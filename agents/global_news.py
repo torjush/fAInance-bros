@@ -76,6 +76,8 @@ class GlobalNewsAgent:
                 "macro_events": [],
                 "market_sentiment": "neutral",
                 "summary": "No global news available.",
+                "safer_sectors": [],
+                "avoid_sectors": [],
             }
 
         logger.info(f"Fetched {len(unique_news)} unique global news items")
@@ -106,6 +108,8 @@ class GlobalNewsAgent:
                 "key_themes": [],
                 "macro_events": [],
                 "summary": "Unable to extract global news themes.",
+                "safer_sectors": [],
+                "avoid_sectors": [],
             }
 
         return {

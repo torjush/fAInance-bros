@@ -56,7 +56,7 @@ Return a JSON object with:
 
 Only return valid JSON, no other text.""",
 
-    "extract_global_news": """You are a macro financial analyst. Based on the following global financial news headlines, extract the key market themes and overall sentiment.
+    "extract_global_news": """You are a macro financial analyst. Based on the following global financial news headlines, extract the key market themes, overall sentiment, and sector risk implications for Oslo Børs investors.
 
 Headlines:
 {headlines}
@@ -66,7 +66,9 @@ Return a JSON object:
     "market_sentiment": "positive" | "negative" | "neutral",
     "key_themes": ["list of key market themes, e.g. 'Fed rate pause', 'Oil supply cut', 'China slowdown'"],
     "macro_events": ["list of significant macro events or decisions mentioned"],
-    "summary": "2-3 sentence overview of the current global market environment"
+    "summary": "2-3 sentence overview of the current global market environment",
+    "safer_sectors": ["list of 2-4 Oslo Børs sectors that are relatively safer or favoured given the current macro environment, e.g. 'Energy', 'Financials', 'Consumer Staples'"],
+    "avoid_sectors": ["list of 2-4 Oslo Børs sectors to underweight or avoid given current macro risks, e.g. 'Real Estate', 'Consumer Discretionary', 'Technology'"]
 }}
 
 Only return valid JSON, no other text.""",
