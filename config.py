@@ -261,11 +261,9 @@ For EACH stock in the portfolio, write a subsection:
 |--------|---------|--------|-----------|
 [one row per suggested stock]
 
-> **Disclaimer:** These stock ideas are AI-generated based on model training knowledge of Oslo Børs combined with the current macro news context. They have not been verified against live market data. This is not financial advice.
-
 ## Disclaimer
 
-*This report is AI-generated for informational purposes only. It is not financial advice. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.*
+*This report is AI-generated for informational purposes only. It is not financial advice. Stock ideas in Section 4 are based on model training knowledge of Oslo Børs and have not been verified against live market data. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.*
 
 ---
 
