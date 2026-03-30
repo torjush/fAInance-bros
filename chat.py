@@ -36,24 +36,35 @@ def setup_logging(verbose: bool = False):
 
 
 def build_context(ticker: str, storage: Storage) -> dict | None:
-    """Load all available analysis data for a ticker from the database."""
-    report = storage.get_latest_report(ticker)
-    if not report:
-        return None
+    """Load all available analysis data for a ticker from the database.
 
+    Returns None only if there is no analysis at all (no report and no insights).
+    Portfolio-mode runs don't generate a report markdown but do save insights,
+    so we fall back to the structured data when the reports table has no entry.
+    """
+    report = storage.get_latest_report(ticker)
     company = storage.get_company(ticker)
     insights = storage.get_insights(ticker, "full_analysis", limit=1)
-    prices = storage.get_prices(ticker, limit=30)
 
+    # Nothing at all — user needs to run analysis first
+    if not report and not insights:
+        return None
+
+    prices = storage.get_prices(ticker, limit=30)
     since_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
     news = storage.get_cached_news(ticker, since=since_date)
+
+    # Determine the best available timestamp
+    timestamp = (report["timestamp"] if report else None) or (
+        insights[0]["timestamp"] if insights else None
+    )
 
     return {
         "ticker": ticker,
         "company_name": company["name"] if company else ticker,
         "sector": company["sector"] if company else "Unknown",
-        "report_markdown": report["report_markdown"],
-        "report_timestamp": report["timestamp"],
+        "report_markdown": report["report_markdown"] if report else None,
+        "report_timestamp": timestamp,
         "full_analysis": insights[0]["content"] if insights else None,
         "prices": prices,
         "news": news,
@@ -106,13 +117,20 @@ def format_system_prompt(context: dict) -> str:
             indent=2,
         )
 
+    report_md = context["report_markdown"] or (
+        "(This stock was analysed as part of a portfolio run — no standalone report was generated. "
+        "The structured analysis summary and price data below contain the full analysis.)"
+    )
+
+    timestamp = context["report_timestamp"] or "unknown"
+
     return PROMPTS["chat_system_prompt"].format(
         today=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         ticker=context["ticker"],
         company_name=context["company_name"],
         sector=context["sector"],
-        report_timestamp=context["report_timestamp"][:10],
-        report_markdown=context["report_markdown"],
+        report_timestamp=timestamp[:10],
+        report_markdown=report_md,
         structured_analysis=structured or "(not available)",
         price_table=_format_price_table(context["prices"]),
         news_summary=_format_news_summary(context["news"]),
@@ -161,7 +179,8 @@ def run_chat_session(ticker: str, storage: Storage, config, verbose: bool = Fals
         age_days = (datetime.now(timezone.utc) - report_dt).days
 
     print(f"\n--- Chat: {context['ticker']} — {context['company_name']} ({context['sector']}) ---")
-    print(f"Report date: {context['report_timestamp'][:10]}", end="")
+    ts = context["report_timestamp"]
+    print(f"Analysis date: {ts[:10] if ts else 'unknown'}", end="")
     if age_days is not None and age_days > 7:
         print(f"  [WARNING: report is {age_days} days old — consider re-running analysis]", end="")
     print()
