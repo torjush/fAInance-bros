@@ -19,6 +19,7 @@ AI-powered stock analysis tool for companies listed on the Oslo Stock Exchange (
   - Claude Sonnet for analysis and report generation (better reasoning)
 - **Visual technical analysis** with price charts, moving averages, and support/resistance levels
 - **PDF reports** alongside markdown
+- **Interactive chat** - ask follow-up questions about any report (e.g. "is this risk overblown? is this a buying opportunity?")
 
 ## Architecture
 
@@ -177,6 +178,20 @@ uv run python analyze.py -p portfolio.txt
 
 Reports are saved to `./data/reports/` as both `.md` and `.pdf` files. Portfolio reports are named `portfolio_YYYYMMDD_HHMMSS.md`.
 
+Ask follow-up questions about any stock analysis:
+```bash
+# Chat about the most recent EQNR analysis
+uv run python chat.py EQNR.OL
+
+# Auto-adds .OL suffix
+uv run python chat.py DNB
+
+# With verbose logging
+uv run python chat.py MOWI --verbose
+```
+
+If no analysis exists yet for the ticker, you will be prompted to run one automatically.
+
 ### Scheduling with Cron
 
 Add to crontab for automated daily analysis:
@@ -194,6 +209,7 @@ Add to crontab for automated daily analysis:
 fAInance-bros/
 ├── analyze.py              # CLI entry point and LangGraph workflow (single-stock)
 ├── portfolio_analyzer.py   # Portfolio orchestrator (parallel per-stock + unified report)
+├── chat.py                 # Interactive chat CLI for follow-up questions about reports
 ├── config.py               # Configuration and prompts
 ├── visualization.py        # Price chart generation
 ├── utils.py                # Utility functions
